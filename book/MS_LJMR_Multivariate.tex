@@ -218,13 +218,11 @@ connects back to the classical theory (\textcolor{wteal}{\textbf{From the ML cou
 \section{Two views of one table}
 A multivariate data set is a matrix $\mathbf{X}$ with $n$ rows (objects, sites,
 specimens, samples) and $p$ columns (variables, traits, features). Nearly every
-technique in this book answers one of two questions about $\mathbf{X}$:
+technique in this book answers one of two questions about $\mathbf{X}$, historically distinguished in ecological literature as the Q and R modes \cite{Legendre_2012}:
 
 \begin{itemize}[leftmargin=1.4em]
-  \item \textbf{Q~mode.} How similar are the \emph{objects} (rows)? This calls for a
-  \emph{dissimilarity} or distance between rows.
-  \item \textbf{R~mode.} How associated are the \emph{variables} (columns)? This calls
-  for a \emph{covariance} or correlation between columns.
+  \item \textbf{Q~mode.} How similar are the \emph{objects} (rows)? This mode focuses on comparing the sample units, calling for a \emph{dissimilarity} or distance between rows. It is the natural view when seeking to cluster or ordinate sites based on their species composition or objects based on their properties.
+  \item \textbf{R~mode.} How associated are the \emph{variables} (columns)? This mode focuses on the relationships among descriptors, calling for a \emph{covariance} or correlation between columns. It is the natural view when aiming to reduce the number of variables by finding latent structures or underlying gradients.
 \end{itemize}
 
 \begin{keybox}
@@ -252,10 +250,7 @@ Euclidean distance on standardized data,
 \[
   d(i,h)=\sqrt{\textstyle\sum_{j=1}^{p}(z_{ij}-z_{hj})^2},
 \]
-but count and presence/absence data demand others (Bray--Curtis, Jaccard, $\chi^2$),
-and mixed numeric/categorical data demand Gower's coefficient. Choosing the distance is
-the single most consequential modelling decision in ordination — it decides what
-``close'' means before any algorithm runs.
+but Euclidean distance often fails in ecological contexts, particularly due to the ``double-zero problem'' where joint absences do not imply similarity \cite{Legendre_2012}. Therefore, count and presence/absence data demand other metrics such as the Bray--Curtis dissimilarity \cite{Bray_1957}, Jaccard, or $\chi^2$ distance. When working with mixed numeric and categorical data, Gower's general coefficient of similarity \cite{Gower_1971} is required because it gracefully handles missing values and variables on completely different scales by standardizing each pairwise comparison by the variable's range. Ultimately, choosing the distance is the single most consequential modelling decision in ordination — it decides what ``close'' means before any algorithm runs.
 
 \begin{lstlisting}
 ## Q-mode dissimilarity and R-mode correlation on Anderson's iris
@@ -317,16 +312,17 @@ eigenvectors are the axes of the data's dispersion ellipsoid and the eigenvalues
 the squared semi-axis lengths. This is the engine of PCA.
 
 \section{The singular value decomposition}
-The most general and numerically stable move is the \emph{singular value decomposition}
+The most general and numerically stable move in linear algebra is the \emph{singular value decomposition}
 (SVD). Any $n\times p$ matrix factors as
 \[
   \mathbf{X}=\mathbf{U}\,\mathbf{D}\,\mathbf{V}^{\!\top},
 \]
-with $\mathbf{U}$ ($n\times r$) and $\mathbf{V}$ ($p\times r$) orthonormal and
-$\mathbf{D}$ the diagonal of singular values $d_1\ge d_2\ge\cdots\ge 0$. Truncating to
-the first $k$ terms,
-$\mathbf{X}_k=\sum_{i=1}^{k} d_i\,\mathbf{u}_i\mathbf{v}_i^{\!\top}$, gives the best
-rank-$k$ approximation in the least-squares sense (Eckart--Young). SVD is simultaneously
+with $\mathbf{U}$ ($n\times r$) and $\mathbf{V}$ ($p\times r$) containing the left and right singular vectors (both orthonormal), and
+$\mathbf{D}$ being the diagonal matrix of singular values $d_1\ge d_2\ge\cdots\ge 0$. 
+
+The remarkable power of SVD lies in its truncation properties. By retaining only the first $k$ terms, we construct
+$\mathbf{X}_k=\sum_{i=1}^{k} d_i\,\mathbf{u}_i\mathbf{v}_i^{\!\top}$, which the Eckart--Young--Mirsky theorem guarantees is the absolute best
+rank-$k$ approximation of the original matrix $\mathbf{X}$ in the least-squares sense (i.e., minimizing the Frobenius norm of the difference) \cite{Eckart_1936}. Consequently, SVD is simultaneously
 the basis of PCA, correspondence analysis, latent semantic analysis, and the low-rank
 compression we illustrate next.
 
@@ -374,11 +370,7 @@ everywhere.
 % ===========================================================================
 \chapter{Principal Component Analysis}
 % ===========================================================================
-Principal Component Analysis (PCA) rotates the variables into a new orthogonal set of
-axes — the \emph{principal components} — ordered so that the first captures the most
-variance, the second the most of what remains, and so on. Following the revised
-schedule, this chapter also folds in \emph{Principal Coordinate Analysis} (PCoA), which
-we show is PCA seen through a distance matrix.
+Principal Component Analysis (PCA), pioneered independently by Karl Pearson \cite{Pearson_1901} and Harold Hotelling \cite{Hotelling_1933}, rotates the variables into a new orthogonal set of axes — the \emph{principal components} — ordered so that the first captures the most variance, the second the most of what remains, and so on. By transforming correlated variables into a smaller number of uncorrelated principal components, PCA effectively separates the signal from the noise in high-dimensional data. Following the revised schedule, this chapter also folds in \emph{Principal Coordinate Analysis} (PCoA), which we show is PCA seen through a distance matrix.
 
 \section{Three routes to the same answer}
 PCA can be computed as (i) the spectral decomposition of the correlation matrix
@@ -455,12 +447,8 @@ drive and their projection onto an axis showing their contribution.
 \end{figure}
 
 \section{PCoA: PCA through a distance matrix}
-Principal Coordinate Analysis (Gower, 1966) takes a \emph{distance} matrix and finds
-coordinates whose Euclidean distances reproduce it — classical (metric) MDS. When the
-input distance is Euclidean on the same standardized data, PCoA returns the PCA scores
-exactly. This is why the standalone PCoA session is folded here: it is the same
-eigen-problem, generalised to non-Euclidean distances (Gower, Bray--Curtis), which lets
-it ordinate mixed-type or count data that PCA cannot.
+Principal Coordinate Analysis (PCoA), formalized by John Gower \cite{GOWER_1966}, takes a \emph{distance} matrix and finds
+a set of Euclidean coordinates whose inter-point distances exactly reproduce the original dissimilarities — this is also known as classical (metric) multidimensional scaling. When the input distance is Euclidean on the same standardized data, PCoA returns the PCA scores exactly. This fundamental equivalence is why the standalone PCoA session is folded here: it is the exact same underlying eigen-problem, generalised to arbitrary non-Euclidean distances (like Gower or Bray--Curtis). This generalisation provides a powerful conceptual bridge, letting us ordinate mixed-type or count data that traditional PCA cannot handle.
 
 \begin{lstlisting}
 D    <- dist(scale(iris[, 1:4]))     # Euclidean distance
@@ -1199,5 +1187,8 @@ Legendre (2012) \emph{Numerical Ecology}; James, Witten, Hastie \& Tibshirani (2
 \emph{ISLR}; Cutler et al.\ (2007) \emph{Ecology}; van der Maaten \& Hinton (2008)
 \emph{JMLR}; McInnes et al.\ (2018) UMAP; Vaswani et al.\ (2017) \emph{NeurIPS};
 Borowiec et al.\ (2022) \emph{Methods Ecol.\ Evol.}
+
+\bibliographystyle{plain}
+\bibliography{references}
 
 \end{document}

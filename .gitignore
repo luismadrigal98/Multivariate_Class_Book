@@ -74,3 +74,6 @@ verify/reference_outputs.txt
 verify/verify_log.txt
 generate_bibtex.py
 bray_curtis.json
+book/MS_LJMR_Multivariate.bbl
+book/MS_LJMR_Multivariate.blg
+.agents/*
