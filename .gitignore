@@ -72,3 +72,5 @@ figs/svd_scree.png
 figs/unsup_embeddings.png
 verify/reference_outputs.txt
 verify/verify_log.txt
+generate_bibtex.py
+bray_curtis.json
