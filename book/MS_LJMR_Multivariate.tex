@@ -284,7 +284,7 @@ classification result later in the book.
 \end{figure}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.7\linewidth]{diss_heatmap.png}
+  \includegraphics[width=0.7\linewidth]{01_diss_image.png}
   \caption{Q-mode Euclidean dissimilarity among the 150 iris objects, ordered by
   species. Dark blocks on the diagonal are within-species similarity; \emph{setosa}
   (first block) is sharply separated from the other two.}
@@ -427,7 +427,7 @@ before the ``elbow.'' The \emph{Kaiser rule} keeps components with eigenvalue $>
 (more variance than a single standardized variable). For iris both rules agree on two.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.56\linewidth]{pca_scree.png}
+  \includegraphics[width=0.56\linewidth]{09_pca_scree.png}
   \caption{Iris PCA scree plot. Only the first two components exceed the Kaiser
   threshold (dashed line at eigenvalue $=1$).}
   \label{fig:pcascree}
@@ -439,7 +439,7 @@ objects in PC space; arrows are variables, their direction showing which compone
 drive and their projection onto an axis showing their contribution.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.66\linewidth]{pca_biplot.png}
+  \includegraphics[width=0.66\linewidth]{09_pca_biplot.png}
   \caption{Iris PCA biplot. PC1 separates \emph{setosa} (left) from the others and is
   driven by the three positively-correlated size variables; sepal width points downward,
   loading on PC2.}
@@ -517,15 +517,21 @@ round(ca$CA$eig / sum(ca$CA$eig), 3)[1:4]
 \end{lstlisting}
 
 \begin{lstlisting}[style=rout]
-  CA1   CA2   CA3   CA4
-0.317 0.241 0.159 0.085
+Inertia (eigenvalues) and proportion per axis:
+          CA1    CA2    CA3    CA4
+inertia 0.601 0.1444 0.1073 0.0834
+prop    0.515 0.1237 0.0919 0.0714
 \end{lstlisting}
 
+More than half the total inertia falls on the first axis alone. That concentration is the
+signature of a system organised by one dominant gradient — here the upstream--downstream
+course of the river — and it is what makes the two-dimensional biplot an honest summary
+rather than a convenient slice.
+
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.62\linewidth]{ca_biplot.png}
-  \caption{CA of a river fish gradient. Sites (points, coloured by upstream--downstream
-  position) and species (triangles) share the same space; the first axis recovers the
-  longitudinal gradient of the river.}
+  \includegraphics[width=0.62\linewidth]{14_ca_biplot.png}
+  \caption{CA of a river fish gradient. Sites and species share the same space; the first
+  axis recovers the longitudinal gradient of the river.}
   \label{fig:ca}
 \end{figure}
 
@@ -577,7 +583,7 @@ stressplot(md)                                   # Shepard diagram
 \end{lstlisting}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{mds_shepard.png}
+  \includegraphics[width=\linewidth]{15_mds.png}
   \caption{Left: an nMDS configuration. Right: the Shepard diagram plots configuration
   distance against original distance; a tight, monotone increasing cloud (near the red
   line) means the low-dimensional map faithfully preserves the dissimilarity ranks.}
@@ -689,30 +695,51 @@ print(fa$loadings, digits = 2, cutoff = 0.2)
 \end{lstlisting}
 
 \begin{lstlisting}[style=rout]
-correlation-matrix eigenvalues:
-[1] 4.311 1.512 0.377 0.295 0.232 0.151 0.123     # two exceed 1 (Kaiser)
+Correlation-matrix eigenvalues:
+[1] 1.521 1.229 1.081 0.985 0.949 0.863 0.373     # three exceed 1 (Kaiser)
 
-Loadings (varimax):
+Factor loadings (varimax):
           Factor1 Factor2
-Petals     -0.47    0.69
-Internode   .      -0.90
-Sepal       0.77   -0.35
-Bract      -0.69    0.39
-Petiole    -0.84    .
-Leaf        .      -0.90
-Fruit       0.88   -0.36
+Petals      -0.46    0.13
+Internode    0.03    0.07
+Sepal        0.19   -0.12
+Bract        0.08   -0.10
+Petiole      0.96    0.27
+Leaf        -0.18    0.98
+Fruit        0.22    0.01
+
+Uniquenesses (variable-specific variance):
+   Petals Internode     Sepal     Bract   Petiole      Leaf     Fruit
+     0.77      0.99      0.95      0.98      0.00      0.00      0.95
+
+Likelihood-ratio test that 2 factors suffice: p = 0.1081
 \end{lstlisting}
 
-Two eigenvalues exceed one, so two factors are retained. After varimax rotation each
-variable loads strongly on one factor and weakly on the other — the ``simple structure''
-that makes factors interpretable. (The correlation-matrix eigenvalues above are exact;
-the loading \emph{signs and magnitudes} depend on the estimator and rotation, so read the
-\emph{pattern} of high/low loadings rather than individual decimals.)
+Three eigenvalues exceed one, so the Kaiser rule would retain three factors, while the
+model fitted here requests two. The two criteria need not agree, and the likelihood-ratio
+test adjudicates: at $p=0.11$ it does not reject the two-factor model, so two factors are a
+defensible simplification even though a third eigenvalue clears the threshold.
+
+The uniquenesses are the more revealing output. \code{Petiole} and \code{Leaf} have
+uniquenesses at essentially zero — the common factors explain them almost entirely — while
+\code{Internode} and \code{Bract} sit at $0.99$ and $0.98$, meaning they are almost pure
+variable-specific variance and share nothing with the rest. A variable like that
+contributes nothing to a common-factor model, and its near-unit uniqueness is the
+diagnostic that says so. PCA, which has no $\mathbf{\Psi}$ term, cannot make this
+distinction at all: it would simply hand \code{Internode} a loading and leave the reader to
+guess whether it meant anything.
+
+\begin{pitfall}
+A uniqueness that is exactly $0$ (a \emph{Heywood case}) or exactly $1$ signals a boundary
+solution, and the corresponding loading should not be read as a precise estimate.
+Maximum-likelihood factor analysis is constrained to $\mathbf{\Psi}\ge0$, and when the
+unconstrained optimum lies outside that region the estimate is pinned to the boundary.
+\end{pitfall}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.5\linewidth]{factor_scree.png}
-  \caption{Scree of the correlation-matrix eigenvalues; the Kaiser line (eigenvalue $=1$)
-  retains two factors, consistent with the four well-separated groups in the data.}
+  \includegraphics[width=0.5\linewidth]{16_fa_scree.png}
+  \caption{Scree of the correlation-matrix eigenvalues; three points clear the Kaiser line
+  (eigenvalue $=1$), though the fitted model retains two factors.}
   \label{fig:fa}
 \end{figure}
 
@@ -763,22 +790,28 @@ table(cluster = km3$cluster, species = iris$Species)
 \begin{lstlisting}[style=rout]
         species
 cluster  setosa versicolor virginica
-      1      50          0         0
-      2       0         48        14
-      3       0          2        36
+      1       0         48        14
+      2       0          2        36
+      3      50          0         0
+
+Agreement (max assignment) = 0.893
 \end{lstlisting}
 
 The elbow sits at $k=3$ (Figure~\ref{fig:elbow}). The cross-tabulation shows the
-unsupervised clusters recover the species with $\approx 89\%$ agreement: \emph{setosa}
-is perfect, while \emph{versicolor}/\emph{virginica} overlap — exactly the structure the
-Q-mode heatmap warned about in Chapter~1.
+unsupervised clusters recover the species with $89.3\%$ agreement: \emph{setosa} is
+perfect — it occupies a cluster of its own, and nothing else is assigned to it — while
+\emph{versicolor} and \emph{virginica} bleed into each other across two clusters, exactly
+the structure the Q-mode heatmap warned about in Chapter~1. Note that the cluster
+\emph{numbers} carry no meaning: k-means never sees the labels, so which partition is
+called ``1'' is an artefact of initialisation, and only the grouping is interpretable.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.52\linewidth]{kmeans_elbow.png}\hfill
-  \includegraphics[width=0.44\linewidth]{kmeans_crosstab.png}
-  \caption{Left: k-means elbow — WSS drops sharply to $k=3$ then flattens. Right: the
-  $k=3$ clusters versus true species; only 16 of 150 objects are ``misplaced,'' all at
-  the versicolor/virginica boundary.}
+  \includegraphics[width=0.52\linewidth]{05_kmeans_elbow.png}\hfill
+  \includegraphics[width=0.44\linewidth]{05_kmeans_pairs.png}
+  \caption{Left: k-means elbow — WSS drops sharply to $k=3$ then flattens. Right: pairwise
+  scatterplots coloured by cluster assignment; the \emph{setosa} cluster separates cleanly
+  on every pair involving petal measurements, while the other two overlap along the
+  versicolor/virginica boundary — 16 of 150 objects in total.}
   \label{fig:elbow}
 \end{figure}
 
@@ -897,26 +930,37 @@ AIC(g_pois, glm(Species ~ Tmp * pH, family = poisson, data = m))  # additive vs 
 \end{lstlisting}
 
 \begin{lstlisting}[style=rout]
-Shapiro-Wilk on Biomass: p-value < 1e-6      # reject normality -> use a GLM
+Shapiro-Wilk on Biomass: 6e-04               # reject normality -> use a GLM
 
 Gamma GLM (Biomass ~ Tmp + pH), log link:
-(Intercept)         Tmp          pH
-     1.6070      0.0673     -0.0415       # on the log scale
+            Estimate Std. Error t value Pr(>|t|)
+(Intercept)  -2.7099     0.5359 -5.0571        0
+Tmp          -0.1106     0.0126 -8.7462        0
+pH            0.7994     0.0902  8.8618        0
 
 Poisson GLM (Species ~ Tmp + pH) coefficients:
 (Intercept)         Tmp          pH
-     0.5028      0.0543      0.1569       # on the log-count scale
+     1.5003      0.0768      0.0192       # on the log-count scale
 
 AIC additive vs interaction (Poisson):
-              df      AIC
-g_pois         3   404.7
-g_int          4   406.7              # interaction not worth the extra parameter
+              df       AIC
+g_pois         3   462.981
+g_int          4   449.890            # interaction IS worth the extra parameter
 \end{lstlisting}
 
-The Shapiro test rejects normality of the (right-skewed) biomass, justifying the GLM; the
-coefficients live on the log scale, so $e^{\beta}$ is a multiplicative effect on the mean;
-and AIC prefers the simpler additive model (adding the interaction raises AIC from
-$404.7$ to $406.7$).
+The Shapiro test rejects normality of the (right-skewed) biomass ($p=6\times10^{-4}$),
+justifying the GLM. The coefficients live on the log scale, so $e^{\beta}$ is a
+multiplicative effect on the mean: biomass falls with temperature
+($e^{-0.1106}\approx0.90$ per degree) and rises steeply with pH
+($e^{0.7994}\approx2.2$ per unit), both estimated far from zero relative to their standard
+errors.
+
+For the counts, AIC prefers the \emph{interaction} model, and by a wide margin — adding
+\code{Tmp:pH} lowers AIC from $462.98$ to $449.89$, a drop of about 13 units where two would
+already be suggestive. Ecologically this says the temperature effect on species richness is
+not additive but conditional on soil pH, which is a more interesting claim than either main
+effect alone. It is also a reminder that model selection is an empirical question: the same
+code on a different data set can, and here does, reverse the verdict.
 
 \begin{figure}[htbp]\centering
   \includegraphics[width=\linewidth]{19_glm.png}
@@ -1568,7 +1612,7 @@ suitability varies along one predictor) and a \emph{suitability surface} in envi
 space, with observed detections overlaid.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{enm.png}
+  \includegraphics[width=\linewidth]{22_enm.png}
   \caption{Ecological niche model. Left: response curve of presence probability against
   temperature. Right: the fitted suitability surface over the two bioclimatic axes;
   detections (points) fall in the high-suitability region.}
@@ -1605,7 +1649,7 @@ c(fill = mean(pam), mean_alpha = mean(alpha), mean_omega = mean(omega))
 \end{lstlisting}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{pam.png}
+  \includegraphics[width=\linewidth]{24_pam.png}
   \caption{A presence--absence matrix (left, sites ordered by latitude), the richness
   gradient it implies ($\alpha$ per site, middle), and the frequency distribution of
   range sizes ($\omega$ per species, right).}
