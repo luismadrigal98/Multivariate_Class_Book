@@ -77,3 +77,6 @@ bray_curtis.json
 book/MS_LJMR_Multivariate.bbl
 book/MS_LJMR_Multivariate.blg
 .agents/*
+figs/21_training_history_val_accuracy_flowers.pdf
+figs/21_training_history_val_loss_flowers.pdf
+scripts/__pycache__/fetch_bibtex.cpython-310.pyc

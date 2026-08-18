@@ -51,42 +51,70 @@ in order:
 So the scripts run today, unmodified, and silently upgrade to the classroom data the
 moment you add the real files — no path editing, ever.
 
-### Data provenance (important)
+### Data provenance
 
-The professor's distributed data files were **not** available in this build environment,
-so they are **not** yet used. Concretely:
-
-- **Genuine data, identical to class:** `iris`, `mtcars` (R built-ins); `doubs` loads the
+- **Genuine data, identical to class:** the real course files now sit in `data/` and are
+  picked up automatically; `iris` and `mtcars` come from R itself, and `doubs` loads the
   real `ade4::doubs` on any machine with `ade4` installed.
-- **Seeded stand-ins (until you add the real files):** `ButterfliesQRoo2`, `BiodivCountries`,
-  `NeotomaMorphoEnvir`, `Limenitis_archippus`, `leukemiaExpressionSubset`, `CitiesEurope`,
-  `speciesCrawley3`, `taxon`, `CountriesToLive`, plus the ENM/PAM demos. Drop the real
-  CSV/RDS files into `MS_LJMR/data/` (using the original filenames) and the loader — and a
-  re-run of `verify/freeze_and_reference.py` — will switch to them automatically.
+- **Frozen demos still in use:** `hanta` and `pam`, which have no real-file mapping in
+  `get_data()`'s lookup table.
+
+Two loader caveats are worth knowing. `Limenitis_archippus.csv` is a headerless numeric
+grid, but the generic real-file branch reads every mapped file with
+`read.csv(..., stringsAsFactors = TRUE)` — i.e. assuming a header — so it arrives as a
+data frame rather than a matrix. And `BiodivCountries.csv` uses different richness-column
+names (`AmphRich`, `Rept_rich`, …) from the ones the simulated fallback invented, and has
+no `*Div` columns at all.
+
+## Environment
+
+`envs/environment.yml` builds a single conda environment covering the book's R stack, the
+ML units, and the R-keras/Python-TensorFlow pair that the deep-learning chapter needs:
+
+```bash
+mamba env create -f envs/environment.yml
+conda activate msljmr
+R -e 'library(tensorflow); tf$constant("ok")'    # verifies R -> Python -> TF
+```
+
+See `envs/README.md` for the GPU variant and for why the keras/tensorflow versions are
+pinned together.
 
 ## Reproducing
 
 ```bash
-# figures + numerical verification (no R needed)
+# R scripts (run from the repo root so R/00_utils.R resolves)
+for f in R/*.R; do Rscript "$f"; done
+
+# independent Python cross-check
 cd verify && python3 make_figures.py && python3 extra_figures.py
 
-# the book
-cd ../book && pdflatex MS_LJMR_Multivariate.tex   # run 2–3× for the TOC
+# the book — classic BibTeX, so bibtex plus two more passes
+cd ../book && pdflatex MS_LJMR_Multivariate.tex && bibtex MS_LJMR_Multivariate \
+  && pdflatex MS_LJMR_Multivariate.tex && pdflatex MS_LJMR_Multivariate.tex
 ```
 
 ## Verification note
 
-No R interpreter was available in the build environment, so every method's key
-quantities were recomputed independently in Python (NumPy / SciPy / scikit-learn /
-statsmodels) and logged to `verify/verify_log.txt`; the R scripts were written to match.
-Reference values: iris PCA variance 73.0 / 22.9 / 3.7 / 0.5 %; k-means recovers the
-species at 89 % agreement; LDA hold-out accuracy 1.00; tree/forest/boosting ≈ 0.96
-(5-fold); `king − man + woman → queen` resolves correctly.
+The classical chapters were cross-checked by recomputing each method's key quantities
+independently in Python (NumPy / SciPy / scikit-learn / statsmodels) and logging them to
+`verify/verify_log.txt`. Reference values: iris PCA variance 73.0 / 22.9 / 3.7 / 0.5 %;
+k-means recovers the species at 89 % agreement; LDA hold-out accuracy 1.00.
+
+The machine-learning chapters report measurements from the ML course units themselves —
+anuran held-out accuracy 0.90 (AdaBoost), AVONET 0.79 accuracy / κ 0.64 (random forest),
+flower classification 0.998 accuracy at 0.004 loss (CNN) — rather than from the small
+companion scripts in `R/`.
 
 ## What changed vs. the originals
 
 - Removed hard-coded `setwd()` and Windows-only `x11()`; portable `open_dev()`/`with_fig()`.
 - Folded PCoA into the PCA arc; retired standalone visualization/ggplot2 sessions.
-- Added four ML chapters/scripts adapted from `UnitCART`, `UnitCARET`, `UnitNN`.
+- Added four ML chapters. These now describe the actual `UnitCART`, `UnitCARET` and
+  `UnitNN` analyses — anuran calls, AVONET birds, CRISPR/healthcare/flowers — with their
+  real recorded results, rather than re-running everything on `iris`.
+- Added derivations to the chapters that previously stated results without them
+  (k-means and Ward objectives, Kruskal stress, χ² decomposition in CA, NMF multiplicative
+  updates, recursive partitioning and cost-complexity pruning, attention).
 - Fixed original bugs: undefined `d_euc2` (dissimilarities), `Qroo3`/`QRoo3` clash (MDS biplot).
 # Multivariate_Class_Book

@@ -1,0 +1,110 @@
+# =============================================================================
+#  MS_LJMR — reproducible environment (CPU)
+#
+#  Covers three things at once:
+#    1. the multivariate book's own R stack (vegan, ade4, NMF, Rtsne, uwot, ...)
+#    2. the ML course units UnitCART / UnitCARET  (rpart, adabag, xgboost, earth,
+#       kernlab, vip, ...)
+#    3. the deep-learning unit UnitNN, which needs R keras + a real Python
+#       TensorFlow underneath it. This is the dependency that made Track B of
+#       R/21_NN_DL.R unrunnable before.
+#
+#  Create with:
+#      conda env create -f envs/environment.yml
+#      conda activate msljmr
+#  or, much faster:
+#      mamba env create -f envs/environment.yml
+#
+#  See envs/README.md for verification steps and the GPU variant.
+# =============================================================================
+name: msljmr
+
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+
+dependencies:
+  # ---- core interpreters -----------------------------------------------------
+  # R 4.4 matches the version recorded in UnitCARET/R_session_info.txt (4.4.0).
+  - r-base=4.4
+  - python=3.11
+
+  # ---- deep learning ---------------------------------------------------------
+  # r-keras 2.16.x targets the keras 2.x API used throughout UnitNN
+  # (keras_model_sequential() |> layer_dense() |> compile()).  Keras 3 renamed
+  # and moved a lot of that surface, so both sides are pinned to the 2.16 line
+  # and must stay in lockstep.
+  - r-keras=2.16
+  - r-tensorflow=2.16
+  - tensorflow=2.16          # the Python engine r-keras binds to via reticulate
+  - r-reticulate
+
+  # ---- ML course: UnitCART ---------------------------------------------------
+  - r-rpart
+  - r-rpart.plot
+  - r-randomforest
+  - r-ipred                  # bagging()
+  - r-xgboost
+  - r-adabag                 # boosting() — the winning model on the anuran calls
+  - r-vip
+  - r-corrr
+  - r-gplots                 # heatmap.2() confusion-matrix figure
+  - r-rcolorbrewer
+  - r-scales
+
+  # ---- ML course: UnitCARET --------------------------------------------------
+  - r-caret
+  - r-recipes
+  - r-rsample
+  - r-mlmetrics
+  - r-earth                  # MARS — best regression model on AVONET range size
+  - r-kernlab                # svmRadial
+  - r-gbm
+  - r-doparallel
+  - r-foreach
+  - r-progress
+  - r-gridextra
+  - r-viridis
+  - r-arm                    # pulls lme4/nloptr; used by the avNNet comparison
+
+  # ---- ML course: UnitNN helpers ---------------------------------------------
+  - r-mltools                # one_hot()
+  - r-future
+  - r-future.apply
+  - r-cowplot
+  - bioconductor-ebimage     # image loading/resizing for the flower CNN
+
+  # ---- multivariate book stack ----------------------------------------------
+  - r-vegan
+  - r-ade4                   # the genuine doubs river-fish data
+  - r-mass
+  - r-ellipse
+  - r-nnet
+  - r-cluster
+  - r-permute
+  - r-rtsne
+  - r-uwot
+  - r-nmf
+
+  # ---- tidyverse / IO --------------------------------------------------------
+  - r-tidyverse
+  - r-dplyr
+  - r-ggplot2
+  - r-data.table
+  - r-rlang
+
+  # ---- reporting -------------------------------------------------------------
+  - r-rmarkdown
+  - r-knitr
+
+  # ---- python side of the ML course -----------------------------------------
+  # UnitNN/python_code/{data_puller,data_fixer}.py fetch and clean the CRISPR
+  # sequences before main.R ever runs.
+  - pandas
+  - numpy
+  - requests
+
+  # ---- packages with no conda-forge feedstock -------------------------------
+  # Installed from CRAN inside the env; see envs/README.md step 4.
+  # r-hda, r-hidimda  (the HDA / RFlda comparators in UnitCARET/src/main.class.R)

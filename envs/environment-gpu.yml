@@ -1,0 +1,92 @@
+# =============================================================================
+#  MS_LJMR — reproducible environment (GPU, Linux only)
+#
+#  Identical to envs/environment.yml except that TensorFlow is pulled in its
+#  CUDA build. Use this only if you have an NVIDIA card and a driver new enough
+#  for CUDA 12; otherwise use the CPU environment, which runs every model in
+#  UnitNN (the flower CNN trains in minutes on CPU at 120x160 input).
+#
+#      mamba env create -f envs/environment-gpu.yml
+#      conda activate msljmr-gpu
+#
+#  NOTE: UnitNN/src/Sec_unable_gpu_processing.R force-disables the GPU:
+#      Sys.setenv(CUDA_VISIBLE_DEVICES = "-1")
+#      tf$config$set_visible_devices(list(), 'GPU')
+#  main.R sources it as its very first action, so you must comment that source()
+#  line out before a GPU here will actually be used.
+# =============================================================================
+name: msljmr-gpu
+
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+
+dependencies:
+  - r-base=4.4
+  - python=3.11
+
+  # ---- deep learning, CUDA build --------------------------------------------
+  - r-keras=2.16
+  - r-tensorflow=2.16
+  - tensorflow=2.16=cuda*     # CUDA-enabled build variant
+  - cudatoolkit
+  - cudnn
+  - r-reticulate
+
+  # ---- everything below is identical to environment.yml ----------------------
+  - r-rpart
+  - r-rpart.plot
+  - r-randomforest
+  - r-ipred
+  - r-xgboost
+  - r-adabag
+  - r-vip
+  - r-corrr
+  - r-gplots
+  - r-rcolorbrewer
+  - r-scales
+
+  - r-caret
+  - r-recipes
+  - r-rsample
+  - r-mlmetrics
+  - r-earth
+  - r-kernlab
+  - r-gbm
+  - r-doparallel
+  - r-foreach
+  - r-progress
+  - r-gridextra
+  - r-viridis
+  - r-arm
+
+  - r-mltools
+  - r-future
+  - r-future.apply
+  - r-cowplot
+  - bioconductor-ebimage
+
+  - r-vegan
+  - r-ade4
+  - r-mass
+  - r-ellipse
+  - r-nnet
+  - r-cluster
+  - r-permute
+  - r-rtsne
+  - r-uwot
+  - r-nmf
+
+  - r-tidyverse
+  - r-dplyr
+  - r-ggplot2
+  - r-data.table
+  - r-rlang
+
+  - r-rmarkdown
+  - r-knitr
+
+  - pandas
+  - numpy
+  - requests

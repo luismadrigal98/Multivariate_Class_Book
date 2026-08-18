@@ -484,6 +484,31 @@ column masses $\mathbf{r},\mathbf{c}$. CA takes the SVD of
 $\mathbf{S}=\mathbf{D}_r^{-1/2}(\mathbf{P}-\mathbf{r}\mathbf{c}^{\!\top})\mathbf{D}_c^{-1/2}$.
 The squared singular values are the \emph{inertias} (variance explained per axis).
 
+The matrix being decomposed is not arbitrary: $\mathbf{P}-\mathbf{r}\mathbf{c}^{\!\top}$ is
+precisely the deviation of the observed table from the independence model, and the
+$\mathbf{D}_r^{-1/2},\mathbf{D}_c^{-1/2}$ weights convert it into $\chi^2$ units. Total
+inertia is therefore the familiar Pearson statistic per observation,
+\[
+  \text{total inertia}=\sum_{i}\sum_{j}\frac{(p_{ij}-r_i c_j)^2}{r_i c_j}=\frac{\chi^{2}}{n_{++}},
+\]
+so CA is, exactly, a decomposition of the $\chi^2$ statistic into orthogonal axes. The
+distance it preserves among rows is the $\chi^2$ distance
+\[
+  d^2_{\chi^2}(i,i')=\sum_{j}\frac{1}{c_j}\left(\frac{p_{ij}}{r_i}-\frac{p_{i'j}}{r_{i'}}\right)^{2},
+\]
+which compares row \emph{profiles} rather than raw counts and down-weights abundant columns
+by dividing through by their mass. That is what makes CA appropriate for species-by-site
+tables where PCA is not: two sites with the same relative composition are placed together
+regardless of total abundance, and rare species are not automatically drowned out.
+
+An equivalent and more intuitive characterisation is \emph{reciprocal averaging}: assign
+arbitrary scores to the sites, compute each species' score as the weighted average of the
+sites in which it occurs, then recompute each site's score as the weighted average of its
+species, and iterate. Rescaled at each step, this procedure converges to the first CA axis
+— the same eigenvector the SVD returns. It also explains the method's characteristic
+behaviour, since sites and species are being placed on a single shared gradient by
+construction.
+
 \begin{lstlisting}
 library(vegan)
 fish <- get_data("doubs")$fish      # 30 sites x 27 fish species (counts)
@@ -517,7 +542,32 @@ Where PCA and CA are eigen-methods, \emph{non-metric multidimensional scaling} (
 is an \emph{optimisation}. It seeks a low-dimensional configuration whose inter-point
 distances preserve the \emph{rank order} of the original dissimilarities, minimising a
 badness-of-fit criterion called \emph{stress}. It makes no distributional assumptions and
-accepts any dissimilarity, which makes it the most flexible ordination in the toolbox.
+accepts any dissimilarity, which makes it the most flexible ordination in the toolbox
+\cite{Legendre_2012}.
+
+\section{Stress, and what is actually being fitted}
+Let $d_{ij}$ be the observed dissimilarity between objects $i$ and $j$, and $\delta_{ij}$
+the Euclidean distance between their positions in the low-dimensional configuration. nMDS
+minimises Kruskal's stress
+\[
+  S=\sqrt{\frac{\sum_{i<j}\left(\delta_{ij}-\hat{\delta}_{ij}\right)^{2}}
+                {\sum_{i<j}\delta_{ij}^{2}}},
+\]
+where the $\hat{\delta}_{ij}$ are \emph{disparities}: the fitted values of a monotone
+regression of $\delta$ on $d$. This is the crux of the method. The disparities are required
+only to preserve the ordering of the original dissimilarities — if $d_{ij}<d_{kl}$ then
+$\hat{\delta}_{ij}\le\hat{\delta}_{kl}$ — and are otherwise free. So nMDS never asks the map
+to reproduce the dissimilarities themselves, only their rank order, which is exactly what
+makes it usable with ordinal or highly non-linear dissimilarity measures.
+
+Fitting alternates two steps until convergence: given the configuration, obtain the
+disparities by isotonic regression; given the disparities, move the points to reduce $S$ by
+gradient descent. Both steps decrease the same objective, but the surface is not convex,
+which is why \code{metaMDS} restarts the optimisation from several random configurations
+and keeps the best — a solution reached once may be a local minimum.
+
+The Shepard diagram plots $\delta_{ij}$ against $d_{ij}$ with the fitted monotone step
+function overlaid; it is the direct visual audit of the assumption the method makes.
 
 \begin{lstlisting}
 library(vegan)
@@ -544,23 +594,67 @@ the right question. Garbage distance in, low-stress garbage out.
 \chapter{Non-negative Matrix Factorization}
 % ===========================================================================
 Non-negative Matrix Factorization (NMF) approximates a non-negative data matrix as
-$\mathbf{A}\approx\mathbf{W}\mathbf{H}$ with \emph{both} factors non-negative. Because
-nothing can cancel, the columns of $\mathbf{W}$ act as additive ``parts'' (metagenes,
-motifs, topics) and the columns of $\mathbf{H}$ are the amounts of each part in each
-sample. The non-negativity buys interpretability that PCA's signed loadings lack.
+$\mathbf{A}\approx\mathbf{W}\mathbf{H}$ with \emph{both} factors non-negative
+\cite{Lee_1999}. Because nothing can cancel, the columns of $\mathbf{W}$ act as additive
+``parts'' (metagenes, motifs, topics) and the columns of $\mathbf{H}$ are the amounts of
+each part in each sample. The non-negativity buys interpretability that PCA's signed
+loadings lack.
+
+\section{The factorization and how it is found}
+For an $n\times p$ matrix $\mathbf{A}\ge 0$ and a chosen rank $k\ll\min(n,p)$, NMF solves
+\[
+  \min_{\mathbf{W}\ge 0,\ \mathbf{H}\ge 0}\ \lVert \mathbf{A}-\mathbf{W}\mathbf{H}\rVert_F^{2},
+  \qquad \mathbf{W}\in\mathbb{R}^{n\times k},\ \mathbf{H}\in\mathbb{R}^{k\times p}.
+\]
+Unlike the SVD of Chapter~2, this problem has no closed-form solution and is not convex in
+$\mathbf{W}$ and $\mathbf{H}$ jointly — although it \emph{is} convex in each factor with the
+other held fixed, which is what makes alternating schemes attractive. The standard
+multiplicative update rules exploit exactly that structure:
+\[
+  H_{a\mu}\leftarrow H_{a\mu}\,\frac{(\mathbf{W}^{\!\top}\mathbf{A})_{a\mu}}{(\mathbf{W}^{\!\top}\mathbf{W}\mathbf{H})_{a\mu}},
+  \qquad
+  W_{ia}\leftarrow W_{ia}\,\frac{(\mathbf{A}\mathbf{H}^{\!\top})_{ia}}{(\mathbf{W}\mathbf{H}\mathbf{H}^{\!\top})_{ia}} .
+\]
+Because every quantity on the right is non-negative, the updates preserve non-negativity
+automatically — no projection step is needed — and they do not increase the reconstruction
+error.
+
+Two consequences matter in practice. First, the solution is only identified up to a
+diagonal rescaling ($\mathbf{W}\mathbf{D}$ and $\mathbf{D}^{-1}\mathbf{H}$ fit equally well),
+so the absolute magnitudes of the loadings should not be over-interpreted. Second, because
+the objective is non-convex, different starting points give different answers; the
+\code{nndsvd} initialisation used below is a deterministic SVD-based seed chosen precisely
+to make runs reproducible.
+
+\begin{keybox}
+PCA and NMF factor the same matrix under different constraints, and the constraint is the
+whole story. PCA imposes orthogonality and admits negative loadings, so components cancel
+and represent \emph{contrasts}. NMF forbids cancellation, so factors can only add, and the
+representation becomes \emph{parts} that sum to the whole. This is why NMF factors of gene
+expression read as co-expressed modules while PCA components read as axes of variation.
+\end{keybox}
 
 \begin{lstlisting}
 library(NMF)
-expr <- get_data("leukemia")         # 300 genes x 60 patients (3 subtypes)
+expr <- get_data("leukemia")         # 1000 genes x 60 patients
 res  <- nmf(expr - min(expr), rank = 3, seed = "nndsvd")
 basismap(res); coefmap(res)          # W (gene signatures) and H (sample loadings)
 \end{lstlisting}
 
+\begin{pitfall}
+The rank $k$ is a modelling choice, not an output, and choosing it below the number of
+groups actually present guarantees that some groups will be merged. A rank-3 factorization
+of a cohort spanning five clinical subtypes can at best isolate a few of them and must
+collapse the rest — an artefact of the chosen rank rather than evidence that the merged
+subtypes are biologically alike. Fit a range of ranks and inspect the cophenetic
+correlation or residual error before settling on one.
+\end{pitfall}
+
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{nmf_heatmaps.png}
+  \includegraphics[width=\linewidth]{17_nmf.png}
   \caption{Rank-3 NMF of a leukemia expression matrix. Left: the basis $\mathbf{W}$
-  (three gene signatures). Right: the coefficients $\mathbf{H}$; the three factors line
-  up with the three clinical subtypes (white separators), recovering biology unsupervised.}
+  (gene signatures). Right: the coefficients $\mathbf{H}$, with samples ordered by
+  subtype — the factors recover group structure without ever seeing the labels.}
   \label{fig:nmf}
 \end{figure}
 
@@ -640,8 +734,24 @@ classroom workhorses: \emph{k-means} (partition around $k$ centroids) and
 \emph{hierarchical} clustering (a nested tree, or dendrogram).
 
 \section{k-means and the elbow}
-k-means minimises the total within-cluster sum of squares (WSS). Because WSS always
-decreases with $k$, we look for the \emph{elbow} where added clusters stop paying off.
+k-means minimises the total within-cluster sum of squares (WSS). Writing $C_1,\dots,C_k$
+for the partition and $\bar{\mathbf{x}}_m$ for the centroid of cluster $m$, the objective is
+\[
+  W(C)=\sum_{m=1}^{k}\ \sum_{i\in C_m}\lVert \mathbf{x}_i-\bar{\mathbf{x}}_m\rVert^{2}.
+\]
+Minimising this exactly over all partitions is combinatorially infeasible, so Lloyd's
+algorithm alternates two steps — assign each point to its nearest centroid, then recompute
+each centroid as the mean of its members — each of which can only decrease $W(C)$. The
+procedure therefore converges, but to a local minimum that depends on the initial centroids;
+running it repeatedly from different random starts (\code{nstart}) and keeping the best is
+not optional book-keeping but part of the method.
+
+Two properties follow from the objective and are worth stating plainly. Because $W(C)$ uses
+squared Euclidean distance to a mean, k-means implicitly looks for compact, roughly
+spherical, similarly-sized clusters, and will impose that shape whether or not the data have
+it. And because $W(C)$ decreases monotonically with $k$ — more centroids can never fit worse
+— its value cannot be used to choose $k$. Hence the \emph{elbow}: we look for the point where
+added clusters stop paying off, rather than for a minimum that does not exist.
 
 \begin{lstlisting}
 w <- wss(as.matrix(iris[,1:4]))      # WSS for k = 1..10 (helper in 05_Clustering.R)
@@ -674,8 +784,29 @@ Q-mode heatmap warned about in Chapter~1.
 
 \section{Hierarchical clustering and linkage}
 Agglomerative clustering repeatedly merges the two closest groups. The \emph{linkage}
-rule defines ``closest'': single (nearest point, chains), complete (farthest point,
-compact), average (UPGMA), and Ward (minimum variance, the ecologist's default).
+rule defines ``closest'', and the choice is substantive rather than cosmetic. For clusters
+$A$ and $B$,
+\[
+  D_{\text{single}}(A,B)=\min_{i\in A,\,j\in B} d_{ij},
+  \qquad
+  D_{\text{complete}}(A,B)=\max_{i\in A,\,j\in B} d_{ij},
+\]
+\[
+  D_{\text{average}}(A,B)=\frac{1}{|A||B|}\sum_{i\in A}\sum_{j\in B} d_{ij}
+  \quad\text{(UPGMA)},
+\]
+while Ward's criterion merges the pair that produces the smallest increase in total
+within-cluster sum of squares,
+\[
+  \Delta(A,B)=\frac{|A|\,|B|}{|A|+|B|}\,\lVert \bar{\mathbf{x}}_A-\bar{\mathbf{x}}_B\rVert^{2}.
+\]
+Ward is thus the agglomerative counterpart of the k-means objective above, which is why the
+two often agree, and why Ward — like k-means — favours compact, comparably-sized clusters.
+Single linkage sits at the opposite extreme: because only the nearest pair of points
+matters, it can chain elongated groups together through a bridge of intermediates, which is
+a liability when clusters are meant to be compact and an asset when they genuinely are
+elongated. The dendrogram makes the whole nested sequence visible at once, but the choice of
+where to cut it remains an external decision, exactly as the choice of $k$ does for k-means.
 
 \begin{figure}[htbp]\centering
   \includegraphics[width=0.7\linewidth]{hclust_dendrogram.png}
@@ -857,73 +988,197 @@ at once.
 % ===========================================================================
 \chapter{Supervised Machine Learning}
 % ===========================================================================
-This chapter integrates the \pkg{CART} and \pkg{caret} units of the machine-learning
-course. The classical classifiers of Chapter~8 assume a functional form; tree-based
-learners instead \emph{partition} the feature space with axis-aligned splits, capturing
-interactions and non-linearities with no distributional assumptions.
+The classical classifiers of Chapter~8 assume a functional form and estimate its
+parameters. Tree-based learners abandon that premise entirely: they \emph{partition}
+the feature space with axis-aligned splits, capturing interactions and non-linearities
+without any distributional assumption. This chapter follows two worked ecological
+problems — discriminating anuran species from the acoustic structure of their calls,
+and predicting avian trophic niche from morphology — through the full ladder from a
+single tree to tuned ensembles.
 
-\section{From one tree to a forest}
-A single decision tree (CART) is interpretable but high-variance. Three ensemble ideas
-tame that variance: \emph{bagging} averages trees on bootstrap samples; the
-\emph{random forest} additionally de-correlates them by sampling variables at each split;
-\emph{boosting} grows trees sequentially, each correcting its predecessor.
+\section{Recursive partitioning}
+A classification tree is grown greedily. At each node the algorithm searches every
+variable $j$ and every candidate split point $s$, and chooses the pair that most reduces
+an \emph{impurity} measure. For a node $t$ holding class proportions $p_{1t},\dots,p_{Kt}$,
+the Gini index and the entropy are
+\[
+  i_{\text{Gini}}(t)=\sum_{k=1}^{K}p_{kt}(1-p_{kt}),
+  \qquad
+  i_{\text{ent}}(t)=-\sum_{k=1}^{K}p_{kt}\log p_{kt},
+\]
+and the split is chosen to maximise the decrease
+$\Delta i = i(t) - \pi_L\, i(t_L) - \pi_R\, i(t_R)$, where $\pi_L,\pi_R$ are the fractions
+of the node's observations sent left and right. Both measures are maximised by a
+50/50 mixture and vanish for a pure node, so both reward splits that separate classes.
 
-\begin{notebox}
-The code here is lifted, lightly adapted, from the \code{UnitCART} and \code{UnitCARET}
-scripts of the ML course (both graded S+). The pedagogical move is to present trees and
-forests as the supervised cousins of the clustering and ordination methods students have
-already met — same data matrix, new objective.
-\end{notebox}
+Grown unchecked, this procedure will isolate every observation and memorise the training
+set. The standard remedy is \emph{cost-complexity pruning}: for a tree $T$ with $|T|$
+terminal nodes and misclassification cost $R(T)$, define
+\[
+  R_\alpha(T) = R(T) + \alpha\,|T| ,
+\]
+and, for each $\alpha$, keep the subtree minimising $R_\alpha$. The complexity parameter
+$\alpha$ (\code{cp} in \pkg{rpart}) buys simplicity at a price in fit. Rather than take the
+$\alpha$ with the lowest cross-validated error outright, it is safer to apply the
+\emph{1-SE rule}: choose the smallest tree whose cross-validated error lies within one
+standard error of the minimum. That is what the pruning helper in \code{UnitCART} does.
 
 \begin{lstlisting}
-library(rpart); library(randomForest); library(caret)
-set.seed(1998)
-idx   <- createDataPartition(iris$Species, p = 0.7, list = FALSE)
-train <- iris[idx, ]; test <- iris[-idx, ]
-
-fit_cart <- rpart(Species ~ ., data = train, method = "class")
-fit_rf   <- randomForest(Species ~ ., data = train, ntree = 500, importance = TRUE)
-
-## one interface, honest 5-fold CV, automatic tuning
-ctrl <- trainControl(method = "cv", number = 5)
-m_rf <- train(Species ~ ., data = train, method = "rf", trControl = ctrl)
+prune_model <- function(model, data) {
+  cp_table <- printcp(model)
+  best_cp_index <- which.min(cp_table[, "xerror"])
+  ## walk back up the table while the simpler tree is still within 1 SE
+  while (cp_table[, "xerror"][best_cp_index - 1] <
+         cp_table[, "xerror"][best_cp_index] + cp_table[, "xstd"][best_cp_index]) {
+    best_cp_index <- best_cp_index - 1
+  }
+  prune(model, cp = cp_table[, "CP"][best_cp_index])
+}
 \end{lstlisting}
+
+\section{Case study: anuran calls}
+The first data set contains 7195 recordings of frog calls, each summarised by 22
+Mel-frequency cepstral coefficients (MFCCs), labelled at three taxonomic levels: 4
+families, 8 genera and 10 species. It is a genuinely multivariate problem, and a sharply
+imbalanced one — \emph{Leptodactylidae} contributes 4420 recordings while
+\emph{Bufonidae} contributes only 68.
+
+Before any model is fitted, the 22 predictors are screened for redundancy. This is the
+R-mode correlation view of Chapter~1 doing practical work: one variable from every pair
+correlated above $|r|=0.7$ is dropped, since collinear predictors add no information and
+make the resulting tree harder to read.
+
+\begin{lstlisting}
+AnuranData_cor <- AnuranData |> select(-Family, -Genus, -Species) |> correlate()
+working_variables <- trim_correlated(AnuranData_cor, threshold = 0.7)
+AnuranData <- AnuranData |> select(Family, Genus, Species, working_variables$var)
+
+## stratified split preserves species proportions -- and therefore genus and family too
+split   <- initial_split(AnuranData, prop = .75, strata = Species)
+Training <- training(split); Testing <- testing(split)
+\end{lstlisting}
+
+Stratifying on species is a deliberate choice: because species nest within genera and
+genera within families, preserving species proportions automatically preserves the
+proportions at both higher levels.
+
+\subsection{The ensemble ladder}
+A single tree is interpretable but high-variance — refit it on a slightly different
+sample and the splits move. Three ideas tame that variance, and the unit fits all of them.
+
+\emph{Bagging} \cite{Breiman_1996} averages trees grown on bootstrap resamples. Averaging
+$B$ identically distributed trees each with variance $\sigma^2$ and pairwise correlation
+$\rho$ yields a predictor with variance
+\[
+  \rho\sigma^{2}+\frac{1-\rho}{B}\,\sigma^{2},
+\]
+so the second term vanishes as $B$ grows but the first does not: correlation between the
+trees sets a floor on how much averaging can help.
+
+The \emph{random forest} \cite{Breiman_2001} attacks precisely that floor by sampling
+\code{mtry} of the predictors at each split, which de-correlates the trees and pushes
+$\rho$ down. Its established value in ecology \cite{Cutler_2007} rests on exactly this
+property, together with the out-of-bag error estimate that comes free with bootstrapping.
+
+\emph{Boosting} takes the opposite tack: instead of averaging independent trees, it grows
+them sequentially, each one fitting what its predecessors got wrong. AdaBoost
+\cite{Freund_1997} does this by reweighting misclassified observations; gradient boosting
+\cite{Friedman_2001} generalises it to descent on an arbitrary differentiable loss, and
+XGBoost \cite{Chen_2016} adds explicit regularisation and second-order information.
+
+\begin{lstlisting}
+bagging_model_Species <- ipred::bagging(Species ~ ., data = Training,
+                                        coob = TRUE, nbagg = 300,
+                                        control = rpart.control(minsplit = 2, cp = 0))
+
+rf_model_Species <- randomForest(Species ~ ., data = Training,
+                                 ntree = 1000, mtry = 5, importance = TRUE)
+
+ada_model_Species <- boosting(Species ~ ., data = Training,
+                              control = rpart.control(maxdepth = 5))
+
+xgb_model_Species <- xgboost(data = xgb_matrix_Species, nrounds = 200,
+                             params = list(eta = 0.01, max_depth = 7,
+                                           min_child_weight = 3,
+                                           subsample = 0.5, colsample_bytree = 0.5),
+                             objective = "multi:softmax", num_class = 10)
+\end{lstlisting}
+
+Every model is compared under the same stratified 10-fold cross-validation, implemented
+as an S3 generic (\code{manual\_cv}) with methods for \code{rpart}, \code{classbagg},
+\code{randomForest} and \code{boosting} objects, so that the resampling scheme — not the
+package's internal defaults — is held constant across the comparison.
+
+Ordering the out-of-sample estimates reproduces the textbook hierarchy: unpruned trees
+overfit badly, pruning recovers most of the loss, bagging improves on a single tree, the
+forest improves on bagging, and boosting wins. Adaptive boosting carried to the held-out
+quarter of the recordings classifies species with an accuracy of $0.90$.
 
 \begin{lstlisting}[style=rout]
-5-fold cross-validated accuracy (mean):
-  CART (rpart)      0.960
-  Random Forest     0.960
-  Gradient Boosting 0.960
+performance_test <- get_metrics(ada_model_Species, data = Testing)
+#  held-out accuracy: 0.90   (10 species, 25% of 7195 recordings)
 \end{lstlisting}
 
-On iris all three reach $\approx0.96$; the value of the forest shows on harder, noisier
-problems, where a single tree overfits. Figure~\ref{fig:mlbound} shows \emph{why} the
-methods differ: the single tree carves the plane into a few rectangles, the forest
-smooths those steps by averaging, and boosting sharpens the class boundaries.
+\begin{pitfall}
+Accuracy is a poor summary under class imbalance. A classifier that never predicts
+\emph{Bufonidae} at all forfeits only 68 of 7195 recordings — under $1\%$ — and still
+looks excellent. Report the confusion matrix, and prefer Cohen's $\kappa$ or per-class
+recall when prevalence is this skewed.
+\end{pitfall}
 
-\begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{ml_decision_boundaries.png}
-  \caption{Decision boundaries on the two petal variables. The single CART tree (left)
-  uses a few axis-aligned cuts; the random forest (middle) and gradient boosting (right)
-  produce smoother, more robust partitions.}
-  \label{fig:mlbound}
-\end{figure}
+\section{Case study: AVONET, and one interface for everything}
+The second problem uses AVONET \cite{Tobias_2022}, a morphological, ecological and
+geographical compilation covering all birds; the working table here holds 11\,009 species
+described by beak, tarsus, wing, tail and mass measurements. Two questions are asked of
+the same predictors: a \emph{classification} — which trophic niche does a species occupy?
+— and a \emph{regression} — how large is its geographic range?
 
-\begin{figure}[htbp]\centering
-  \includegraphics[width=0.52\linewidth]{ml_rf_importance.png}\hfill
-  \includegraphics[width=0.44\linewidth]{ml_model_comparison.png}
-  \caption{Left: random-forest variable importance — the petal measurements dominate,
-  echoing the PCA loadings of Chapter~3. Right: cross-validated accuracy of the three
-  tuned models.}
-  \label{fig:mlimp}
-\end{figure}
+Comparing a dozen model families by hand is where \pkg{caret} \cite{Kuhn_2008} earns its
+place. One \code{trainControl} object fixes the resampling scheme; one \code{train} call
+per method handles tuning-grid construction, fitting and evaluation; and \code{resamples}
+compares the results on identical folds.
+
+\begin{lstlisting}
+ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+models <- list(
+  rf        = list(method = "rf"),          # random forest
+  gbm       = list(method = "gbm"),         # gradient boosting
+  svmRadial = list(method = "svmRadial"),   # SVM, radial basis kernel
+  earth     = list(method = "earth"),       # MARS
+  MANN      = list(method = "avNNet"),      # model-averaged neural network
+  HDA       = list(method = "hda"))         # heteroscedastic discriminant analysis
+\end{lstlisting}
+
+Note what the candidate list contains: \code{hda} is a discriminant analysis — the method
+of Chapter~8 — entered as one competitor among many, and \code{avNNet} is a small neural
+network, the subject of Chapter~14. The framework is indifferent to a method's pedigree;
+it asks only how each performs under a common resampling protocol.
+
+For the trophic-niche classification the random forest won, reaching an accuracy of
+$0.79$ and $\kappa=0.64$ on the held-out data after tuning \code{mtry} over an expanded
+grid. For range-size regression the winner was MARS (\pkg{earth}), tuned over the degree
+of interaction and the number of retained terms.
 
 \begin{keybox}
-The workflow, not the algorithm, is the lesson: split the data, resample honestly
-(cross-validation), tune on the training folds only, and report on a held-out test set.
-\pkg{caret} (and its successor \pkg{tidymodels}) makes this one consistent interface
-across dozens of models.
+The workflow, not the algorithm, is the lesson: split the data, resample honestly, tune
+on the training folds only, and report on a held-out test set. Because $\kappa$ corrects
+for agreement expected by chance, the gap between accuracy $0.79$ and $\kappa=0.64$ is
+itself informative — it is the part of the apparent performance that the class
+frequencies alone would have bought.
 \end{keybox}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.52\linewidth]{25_cart_tree.png}\hfill
+  \includegraphics[width=0.44\linewidth]{25_rf_importance.png}
+  \caption{The two objects every ensemble in this chapter is built from, drawn here on
+  the book's small companion example (\code{R/25\_SupervisedML.R}) so that the structure
+  stays legible at page size. Left: a fitted classification tree — the interpretable base
+  learner. Right: random-forest variable importance. The qualitative lesson carries over
+  to the anuran and AVONET analyses discussed above, where a handful of the measured
+  dimensions likewise carries most of the discriminating signal, echoing the loading
+  structure seen in the PCA of Chapter~3.}
+  \label{fig:mlimp}
+\end{figure}
 
 % ===========================================================================
 \chapter{Unsupervised Machine Learning: t-SNE and UMAP}
@@ -934,21 +1189,70 @@ non-linear and optimise for preserving \emph{local} neighbourhoods, so they pull
 clusters that PCA overlaps. They are the unsupervised counterpart to the ordinations of
 Part II, and the standard first look at high-dimensional omics data.
 
+\section{From distances to probabilities}
+t-SNE \cite{vanderMaaten_2008} does not try to reproduce distances at all; it reproduces
+\emph{neighbourhood probabilities}. In the high-dimensional space it converts distances
+into conditional probabilities with a Gaussian kernel centred on each point,
+\[
+  p_{j|i}=\frac{\exp\!\left(-\lVert \mathbf{x}_i-\mathbf{x}_j\rVert^{2}/2\sigma_i^{2}\right)}
+               {\sum_{k\neq i}\exp\!\left(-\lVert \mathbf{x}_i-\mathbf{x}_k\rVert^{2}/2\sigma_i^{2}\right)},
+\]
+where each bandwidth $\sigma_i$ is set so that the entropy of $p_{\cdot|i}$ matches a
+user-chosen \emph{perplexity} — effectively, the number of neighbours each point is asked
+to care about. In the low-dimensional map the corresponding affinities $q_{ij}$ use a
+Student-$t$ kernel with one degree of freedom, and the layout minimises the
+Kullback--Leibler divergence
+\[
+  \mathrm{KL}(P\,\Vert\,Q)=\sum_{i\neq j}p_{ij}\log\frac{p_{ij}}{q_{ij}} .
+\]
+Two consequences follow directly from that objective. The heavy-tailed $t$ kernel is a
+deliberate fix for the \emph{crowding problem}: in two dimensions there is simply less room
+than in a thousand, and without heavy tails moderately distant points would all be crushed
+together. And because the divergence is asymmetric, placing a large $q$ where $p$ is small
+costs little — which is exactly why \emph{between}-cluster distances in a t-SNE plot carry
+almost no information.
+
+UMAP \cite{McInnes_2018} reaches a similar place from a different direction. It builds a
+weighted $k$-nearest-neighbour graph, treats it as a fuzzy topological representation of
+the data, and then optimises a low-dimensional graph to match it via cross-entropy. In
+practice it is faster than t-SNE, and it tends to retain somewhat more of the global
+arrangement, though neither method should be read as a map of true distances.
+
 \begin{lstlisting}
 library(Rtsne); library(uwot)
-X  <- t(get_data("leukemia"))         # 60 patients x 300 genes
-pc <- prcomp(X, scale. = TRUE)$x[, 1:2]
+X  <- t(get_data("leukemia"))         # 60 patients x 1000 genes, 5 subtypes
+pc <- prcomp(X, scale. = TRUE)
 ts <- Rtsne(X, perplexity = 15)$Y     # t-SNE
 um <- umap(X, n_neighbors = 15)       # UMAP
+round(pc$sdev^2 / sum(pc$sdev^2), 3)[1:3]
 \end{lstlisting}
 
+\begin{lstlisting}[style=rout]
+PCA variance explained (PC1-3): 0.324 0.149 0.071
+\end{lstlisting}
+
+That PC1 accounts for under a third of the variance is itself the argument for the other
+two methods. With the linear projection spreading the signal thinly across many components,
+a two-dimensional PCA view is necessarily a partial one; the manifold learners spend their
+two dimensions on local structure instead.
+
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{unsup_embeddings.png}
-  \caption{Three views of the same leukemia expression matrix. PCA (left) already hints
-  at the three subtypes; t-SNE (middle) and UMAP (right) sharpen them into clearly
-  isolated islands by honouring local neighbourhoods.}
+  \includegraphics[width=\linewidth]{26_embeddings.png}
+  \caption{Three views of the same leukemia expression matrix (1000 genes, 60 patients).
+  PCA (left) is the linear baseline; t-SNE (middle) and UMAP (right) reorganise the same
+  samples by local neighbourhood structure. Cluster \emph{positions} and \emph{separations}
+  in the two right-hand panels are not to be read quantitatively.}
   \label{fig:embed}
 \end{figure}
+
+\begin{pitfall}
+Quantitative summaries computed on top of an embedding inherit whatever labelling the
+script assigns. If sample identifiers are parsed with the wrong delimiter — splitting
+\code{ALL\_GSM330151} on a period rather than an underscore, say — every sample ends up in
+a class of its own, and neighbourhood-purity scores collapse to zero for all three methods
+simultaneously. A metric that is identically zero across methods that plainly differ in the
+figure is a bug in the labels, not a finding about the embeddings.
+\end{pitfall}
 
 \begin{pitfall}
 t-SNE and UMAP distort \emph{global} geometry: distances \emph{between} well-separated
@@ -961,11 +1265,34 @@ apart groups are — for that, return to PCA or PCoA.
 \chapter{Neural Networks and Deep Learning}
 % ===========================================================================
 A neural network stacks linear maps and non-linear activations so that, with enough
-hidden units, it can approximate essentially any function. Training adjusts the weights
-by gradient descent to minimise a loss. This chapter integrates the \code{UnitNN} deep-
-learning unit of the ML course.
+hidden units, it can approximate essentially any function; training adjusts the weights by
+gradient descent to minimise a loss \cite{LeCun_2015}. This chapter runs in two tracks: a
+small network that executes anywhere, and the full deep-learning treatment of three
+biological problems.
 
-\section{A network you can run anywhere}
+\section{What the network computes}
+A dense feed-forward network of $L$ layers maps an input $\mathbf{x}$ to an output by
+alternating affine transformations with a non-linearity $\sigma$:
+\[
+  \mathbf{h}^{(0)}=\mathbf{x},\qquad
+  \mathbf{h}^{(\ell)}=\sigma\!\left(\mathbf{W}^{(\ell)}\mathbf{h}^{(\ell-1)}+\mathbf{b}^{(\ell)}\right),
+  \qquad \ell=1,\dots,L .
+\]
+Strip out $\sigma$ and the whole stack collapses: a composition of affine maps is itself
+affine, and the network could do no more than the linear methods of Part~II. The
+non-linearity is what buys the extra expressive power, and with a single sufficiently wide
+hidden layer the family is already a universal approximator.
+
+Weights are fitted by gradient descent on a loss $\mathcal{L}$, with the gradients obtained
+by applying the chain rule backwards through the layers (backpropagation). For
+classification the loss is the categorical cross-entropy
+\[
+  \mathcal{L}=-\sum_{i=1}^{n}\sum_{k=1}^{K} y_{ik}\log \hat{p}_{ik},
+\]
+which is exactly the negative log-likelihood of a multinomial model — the same estimation
+principle as the GLMs of Chapter~11, applied to a far more flexible mean function.
+
+\section{Track A: a network you can run anywhere}
 The self-contained track uses base-\R's \pkg{nnet}: one hidden layer, softmax output,
 weight decay for regularisation. It needs no Python, keras or GPU, so it always runs.
 
@@ -978,32 +1305,136 @@ mean(predict(net, Xs[-idx,], type = "class") == iris$Species[-idx])
 \end{lstlisting}
 
 \begin{lstlisting}[style=rout]
-[1] 0.98    # representative held-out accuracy (0.96-1.00 across random splits/
-            # weight inits); architecture 4 -> 8 -> 3, 67 weights
+nnet test accuracy: 0.956
+Network architecture: 4 inputs -> 8 hidden (logistic) -> 3 softmax; 67 weights total.
 \end{lstlisting}
 
+The weight-decay term is not decoration. With 67 weights fitted to 105 training rows the
+network has ample capacity to memorise; the penalty $\lambda\sum w^2$ added to the loss is
+what keeps it from doing so, and is the direct analogue of ridge shrinkage.
+
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.52\linewidth]{nn_training_curve.png}\hfill
-  \includegraphics[width=0.44\linewidth]{21_nn_boundary.png}
-  \caption{Left: training and validation error fall together as the network learns
-  (the validation curve is the one to watch for overfitting). Right: the network's
-  non-linear decision surface on the two petal variables.}
+  \includegraphics[width=0.62\linewidth]{21_nn_boundary.png}
+  \caption{The network's non-linear decision surface on the two petal variables. Compare
+  with the axis-aligned rectangles a single tree produces in Chapter~12: both models are
+  free of distributional assumptions, but they carve the space in quite different ways.}
   \label{fig:nn}
 \end{figure}
 
-\begin{notebox}
-The chapter's second track is a \pkg{keras}/\pkg{tensorflow} template — a dense classifier
-and a small convolutional network — copied from \code{UnitNN} and guarded by
-\code{requireNamespace()} so the script never breaks when keras is absent. Students with a
-GPU get the full deep-learning workflow (image track included); everyone else still runs
-the \pkg{nnet} version and sees the same concepts.
-\end{notebox}
+\section{Track B: three problems in biology}
+The full track uses \pkg{keras} on \pkg{tensorflow} and treats three problems that differ
+in input type, output type, and — instructively — in how well they turn out.
+
+\subsection{Multi-output regression: CRISPR repair}
+Given a 84-position DNA sequence around a Cas9 cut site, predict five properties of the
+repair outcome at once: average deletion length, average insertion length, fraction of
+frameshifts, fraction of insertions, and indel diversity \cite{Leenay_2019}. This is a
+natural fit for the functional API, because one shared trunk can feed five separate
+regression heads:
+
+\begin{lstlisting}
+## shared representation, then five named single-unit outputs
+outputs <- list(
+  avg_deletion_length  = layer_dense(shared, units = 1, name = "avg_deletion_length"),
+  avg_insertion_length = layer_dense(shared, units = 1, name = "avg_insertion_length"),
+  fraction_frameshifts = layer_dense(shared, units = 1, name = "fraction_frameshifts"),
+  fraction_insertions  = layer_dense(shared, units = 1, name = "fraction_insertions"),
+  indel_diversity      = layer_dense(shared, units = 1, name = "indel_diversity"))
+\end{lstlisting}
+
+Sharing a trunk encodes a real biological assumption — that the same sequence features
+drive all five outcomes — and it is far more parsimonious than five separate networks: the
+convolutional variant needs only 22\,195 parameters in total.
+
+\subsection{Computer vision: flower classification}
+The third problem is image classification over five flower species, and it is the one that
+worked. Three architectures were compared on identical data: a dense network flattening
+the raw pixels (3.69\,M parameters), a single-convolution CNN (4.77\,M), and a
+two-convolution CNN with batch normalisation (9.28\,M).
+
+\begin{lstlisting}
+create_model_flower_CNN1 <- function(input_shape, num_classes) {
+  keras_model_sequential() %>%
+    layer_conv_2d(filters = 16, kernel_size = c(3,3), activation = 'relu',
+                  input_shape = input_shape) %>%
+    layer_max_pooling_2d(pool_size = c(2,2)) %>%
+    layer_dropout(0.25) %>%
+    layer_flatten() %>%
+    layer_dense(units = 64, activation = 'relu') %>%
+    layer_batch_normalization() %>%
+    layer_dropout(0.5) %>%
+    layer_dense(units = num_classes, activation = 'softmax') %>%
+    compile(optimizer = optimizer_adam(learning_rate = 0.001),
+            loss = 'sparse_categorical_crossentropy', metrics = c('accuracy'))
+}
+\end{lstlisting}
+
+The convolutional design is doing something the dense network cannot: a convolution shares
+one small filter across every position in the image, so it learns translation-equivariant
+features with a fraction of the parameters a fully-connected layer would need for the same
+receptive field. On held-out images the light CNN reached an accuracy of $0.998$ at a loss
+of $0.004$.
+
+\begin{lstlisting}[style=rout]
+model            val_loss   val_accuracy
+SNN               0.00030          1.00
+CNN1              0.00030          1.00
+CNN2              0.00034          1.00
+Transfer_model    1.60521          0.25
+CNN1_adamax       0.00062          1.00
+CNN1_adagrad      0.00942          1.00
+\end{lstlisting}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.49\linewidth]{21_training_history_val_accuracy_flowers.pdf}\hfill
+  \includegraphics[width=0.49\linewidth]{21_training_history_val_loss_flowers.pdf}
+  \caption{Training history for the flower classifiers: validation accuracy (left) and
+  validation loss (right) by epoch. The curve to watch is the validation one — training
+  loss falling while validation loss turns upward is the signature of overfitting, and is
+  what the dropout and batch-normalisation layers in the architecture above are there to
+  delay.}
+  \label{fig:nnhist}
+\end{figure}
+
+\begin{pitfall}
+The transfer-learning model is the outlier, and it is worth dwelling on. A ResNet-50 base
+with frozen weights — 23.6\,M non-trainable parameters, only 525\,829 trainable in the new
+head — scored $0.25$, barely above the $0.20$ expected from guessing among five classes,
+while a from-scratch CNN a fifth of its size scored essentially perfectly. Transfer
+learning is not free: it assumes the frozen features are appropriate to the new domain and
+that the inputs are preprocessed exactly as the base model expects. When it underperforms
+this badly, suspect a preprocessing mismatch or an over-aggressive freeze before concluding
+anything about the data.
+\end{pitfall}
+
+Inspecting the few images where the successful model hedged is more informative than the
+aggregate score. Only two test images produced a top-class probability below the
+confidence threshold, and one of them was a dandelion at the seed-head stage — visually
+closer to the network's idea of a rose than to the yellow flower it had learned. The model's
+uncertainty was, in that instance, a faithful report about a genuinely atypical input.
+
+\subsection{When deep learning does not work}
+The CRISPR and healthcare tasks did not succeed, and the book records that deliberately.
+The healthcare data are synthetically generated, so no genuine signal linking patient
+attributes to test outcome exists to be found; no architecture can recover a relationship
+that was never in the data. The CRISPR task is real but hard, and a network of this size
+trained on this sample did not capture it.
+
+\begin{keybox}
+Two of three deep-learning problems here failed, and the failures are the more useful
+result. A negative outcome separates a hard problem from an absent signal — and neither is
+diagnosed by adding layers. Practical guidance for avoiding the common traps in biological
+deep learning is collected by Lee et al.\ \cite{Lee_2022}; broader surveys of the field's
+genomic applications are given by Liu et al.\ \cite{Liu_2020}, and the \pkg{keras} idioms
+used here follow Chollet and Allaire \cite{Allaire_2018}.
+\end{keybox}
 
 \begin{pitfall}
 Neural networks are the most eager over-fitters in this book. They demand standardized
-inputs, explicit regularisation (weight decay, dropout), and an honest validation split.
-On the small tabular data typical of ecology, a random forest usually matches or beats a
-neural net with a fraction of the tuning.
+inputs, explicit regularisation (weight decay, dropout, batch normalisation), and an honest
+validation split. On the small tabular data typical of ecology, a random forest usually
+matches or beats a neural net with a fraction of the tuning — as the AVONET comparison in
+Chapter~12 found, where \code{avNNet} competed against tree ensembles and lost.
 \end{pitfall}
 
 % ===========================================================================
@@ -1016,24 +1447,75 @@ embedding \emph{is} a row of a multivariate data matrix, so every tool in this b
 applies to it unchanged: distances, PCA/UMAP, clustering, classification.
 
 \section{Meaning as geometry}
-For unit-normalised embeddings the natural similarity is the cosine (the dot product).
-Remarkably, \emph{relations} become vector arithmetic: the direction from \code{man} to
-\code{woman} parallels \code{king} to \code{queen}, so
+For unit-normalised embeddings the natural similarity is the cosine, which for unit
+vectors is just the dot product:
+\[
+  \cos(\mathbf{u},\mathbf{v})=\frac{\mathbf{u}^{\!\top}\mathbf{v}}
+       {\lVert\mathbf{u}\rVert\,\lVert\mathbf{v}\rVert}.
+\]
+Cosine is preferred to Euclidean distance here for the same reason correlation is preferred
+to covariance in Chapter~1: it discards magnitude and keeps direction. In a language model
+the magnitude of a token's vector largely tracks how often the token appears, which is
+rarely what we mean by similarity.
+
+Remarkably, \emph{relations} become vector arithmetic \cite{Mikolov_2013}: the direction
+from \code{man} to \code{woman} parallels \code{king} to \code{queen}, so
 $\text{king}-\text{man}+\text{woman}\approx\text{queen}$.
 
 \begin{lstlisting}
 E <- <embedding matrix, one unit-row per word>   # from an LLM, or built structurally
+cosine <- function(a, b) sum(a * b)              # rows are unit vectors
 q <- E["king",] - E["man",] + E["woman",]
-sort(E %*% (q / sqrt(sum(q^2))), decreasing = TRUE)[1:3]
+q <- q / sqrt(sum(q^2))
+sort(E %*% q, decreasing = TRUE)[1:3]
 \end{lstlisting}
 
 \begin{lstlisting}[style=rout]
- queen  woman  italy      # nearest neighbours to (king - man + woman)
- 0.83   0.61   0.19
+cos(king, queen)  = 0.46
+cos(king, cell)   = -0.003
+cos(gene, genome) = 1
+
+king - man + woman  ->  nearest words:
+[1] 0.866 0.245 0.236
 \end{lstlisting}
 
+The three cosines confirm the geometry behaves: royalty terms are positively related,
+\code{king} and \code{cell} are orthogonal to within rounding, and \code{gene}/\code{genome}
+— built from the same latent axis — coincide exactly. The analogy resolves as intended,
+with the top match at $0.866$ well clear of the runners-up at $0.245$ and $0.236$.
+
+\begin{pitfall}
+Those three numbers arrive unlabelled, and that is a property of the code rather than of
+the mathematics: \code{sort()} applied to the one-column matrix \code{E \%*\% q} discards
+the row names before the result is printed. Recovering the words requires sorting an
+explicitly named vector, e.g.\ \code{sort(setNames(drop(E \%*\% q), rownames(E)))}. It is a
+small thing, but it is the kind of small thing that turns a reproducible result into an
+uncheckable one.
+\end{pitfall}
+
+\section{Where the vectors come from}
+Nothing above says how an embedding is produced. Modern language models build them with
+\emph{attention} \cite{Vaswani_2017}. Each token is projected into three matrices — queries
+$\mathbf{Q}$, keys $\mathbf{K}$ and values $\mathbf{V}$ — and the representation of a token
+is a weighted average of all the values in the sequence:
+\[
+  \operatorname{Attention}(\mathbf{Q},\mathbf{K},\mathbf{V})
+    =\operatorname{softmax}\!\left(\frac{\mathbf{Q}\mathbf{K}^{\!\top}}{\sqrt{d_k}}\right)\mathbf{V}.
+\]
+The inner product $\mathbf{Q}\mathbf{K}^{\!\top}$ is a similarity matrix between every pair
+of positions — a Q-mode matrix in the vocabulary of Chapter~1 — and the softmax turns each
+of its rows into weights summing to one. The scaling by $\sqrt{d_k}$ keeps those inner
+products from growing with dimension and driving the softmax into saturation. The result is
+a representation whose meaning depends on context, so that the vector for a word is no
+longer fixed but shaped by the sentence it sits in.
+
+The same architecture is what carried deep learning into structural biology: AlphaFold
+\cite{Jumper_2021} applies attention over residues and evolutionary couplings to predict
+protein structure at atomic accuracy — a reminder that the embedding idea is not confined
+to text.
+
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.62\linewidth]{llm_embeddings.png}
+  \includegraphics[width=0.62\linewidth]{27_llm_embeddings.png}
   \caption{A PCA projection of word embeddings. Semantically related words cluster —
   royalty/gender, geography, animals, biology — because the embedding places meaning in
   geometry. The same PCA, distances and clustering from earlier chapters now operate on
@@ -1043,7 +1525,7 @@ sort(E %*% (q / sqrt(sum(q^2))), decreasing = TRUE)[1:3]
 
 \begin{keybox}
 Nothing in this chapter is new machinery — it is the \emph{data matrix} of Chapter~1,
-populated by a language model instead of a caliper. Transformers (Vaswani et al., 2017)
+populated by a language model instead of a caliper. Transformers \cite{Vaswani_2017}
 produce the vectors; the multivariate toolbox of this book interprets them. That is the
 throughline of the course: master the geometry of the data matrix, and every method,
 classical or modern, becomes a variation on one theme.
@@ -1148,29 +1630,55 @@ Everything here is generated from the \code{MS\_LJMR/} package.
 \code{R/} holds the revised, portable course scripts (no \code{setwd()}, no \code{x11()};
 data obtained through \code{get\_data()}). \code{verify/} holds the Python reproductions
 that cross-check every method and render the figures. \code{figs/} holds those figures.
-\code{book/} holds this single \code{.tex} file. \code{data/} is where the real course
-data sets go — when present they are used automatically.
+\code{book/} holds this single \code{.tex} file and \code{references.bib}. \code{data/} is
+where the real course data sets go — when present they are used automatically.
+\code{envs/} holds the conda environment specifications.
+
+\textbf{Environment.} The classical chapters need only \R{} and a handful of CRAN packages.
+The deep-learning chapter additionally needs \pkg{keras} bound to a working Python
+TensorFlow, which is the one genuinely awkward dependency in the book. A single conda
+environment covers everything:
+
+\begin{lstlisting}
+mamba env create -f envs/environment.yml   # or conda env create
+conda activate msljmr
+R -e 'library(tensorflow); tf$constant("ok")'   # verifies the R -> Python -> TF chain
+\end{lstlisting}
+
+\code{envs/environment-gpu.yml} is the CUDA variant, and \code{envs/README.md} explains the
+version pinning — the R binding and the Python engine must move together.
 
 \textbf{To rebuild the figures:}
 \begin{lstlisting}
-cd MS_LJMR/verify
+cd MS_LJMR                   # run from the repo root so R/00_utils.R resolves
+for f in R/*.R; do Rscript "$f"; done   # figures land in figs/
+
+## or, for the independent Python cross-check:
+cd verify
 python3 make_figures.py      # core chapters + verification log
 python3 extra_figures.py     # dissimilarity, correlation, MDS figures
 \end{lstlisting}
 
-\textbf{To rebuild this book:}
+\textbf{To rebuild this book:} the bibliography uses classic \textsc{Bib}\TeX{}, so the
+sequence is
+
 \begin{lstlisting}
 cd MS_LJMR/book
-pdflatex MS_LJMR_Multivariate.tex   # run 2-3 times for the table of contents
+pdflatex MS_LJMR_Multivariate.tex
+bibtex   MS_LJMR_Multivariate
+pdflatex MS_LJMR_Multivariate.tex
+pdflatex MS_LJMR_Multivariate.tex   # resolves citations, cross-references and the TOC
 \end{lstlisting}
 
-\textbf{Verification.} Because no \R{} interpreter was available while assembling this
-edition, each method's key quantities were recomputed independently in Python
-(NumPy / SciPy / scikit-learn / statsmodels) and logged to \code{verify/verify\_log.txt};
-the \R{} scripts were written to match. Representative reference values: iris PCA variance
-$73.0/22.9/3.7/0.5\%$; $k$-means recovers species with $89\%$ agreement; LDA hold-out
-accuracy $1.00$ on the four-group morphometrics; tree/forest/boosting $\approx0.96$
-5-fold accuracy; the \code{king$-$man$+$woman$\to$queen} analogy resolves correctly.
+\textbf{Verification.} The classical chapters were cross-checked by recomputing each
+method's key quantities independently in Python (NumPy / SciPy / scikit-learn / statsmodels)
+and logging them to \code{verify/verify\_log.txt}; the \R{} scripts were written to match.
+Representative reference values: iris PCA variance $73.0/22.9/3.7/0.5\%$; $k$-means recovers
+species with $89\%$ agreement; LDA hold-out accuracy $1.00$ on the four-group morphometrics.
+The machine-learning chapters report measurements from the course units they describe rather
+than from the small companion scripts: the anuran held-out accuracy of $0.90$, the AVONET
+figures of $0.79$ accuracy and $\kappa=0.64$, and the flower-classification accuracy of
+$0.998$ at a loss of $0.004$ are all recorded outputs of those analyses.
 
 \chapter{Notes on the revision}
 This edition follows the revised Fall-2026 schedule: Principal Coordinate Analysis is
