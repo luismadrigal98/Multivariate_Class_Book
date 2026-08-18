@@ -1,0 +1,29 @@
+Date,Topic,R-code,Readings
+22-Aug,Introduction to the class,,Syllabus
+24-Aug,The Main Questions,,Ch. 2 Greenacre & Primicerio 2014; James & McCulloch 1990; Ter Braak 1998
+9-Aug,R fundamentals and Data Visualization I,01_Visualization.R,McInerny et al. 2014
+31-Aug,The Q and R views of a data matrix,02_QandR_dissimilarities.R,Faith et al. 1987; Ch.4 Greenacre & Primicerio 2014; Oksanen 2009
+5-Sep,Classification & Clustering: K-means,03_kmeans_clustering_Qroo_iris.R,"de la Maza & Soberon, 1998"
+7-Sep,Classification & Clustering Hierarchical clustering,04_Hierarchical_Clustering.R,"Kreft & Jetz, 2010; Ch.7 Greenacre & Primicerio 2014"
+12-Sep,Linear Algebra I,,SwarmsOnVectors.pdf
+14-Sep,Linear Algebra II,05_Transformations.R,May 1973; Farber & Kadmon 2003
+19-Sep,Linear Algebra III,06_SingularValueDecomposition.R,
+26-Sep,Principal Components I,07_PCAI.R,Soberon & Martinez-Gordillo 2012
+28-Sep,Principal Components II,08_PCAII.R,
+3-Oct,Principal Components III,09_PCAIII_Biplots.R,
+5-Oct,Correspondance Analysis,10_CorrespondanceAnalysis.R; evplot.R,
+10-Oct,Multidimensional Scaling I,11_MultidimensionalScaling.R,Kreft & Jetz 2010; Oksanen 2009
+12-Oct,Final Project Advances,Show your code,
+"17 is Fall Break, and 18-20 I am in Laramie",,,
+31-Oct,Multidimensional Scaling II,12_MDS_Biplots.R,BiplotGUI_Vignette.pdf; BiplotsGUIFeaturesManual.pdf
+2-Nov,Discriminant Function Analysis,13_DiscriminantAnalysis.R,14_TestingHomoscedastictyCovarMatrices.R
+7-Nov,Data Visualization II,15_VisualizationII.R,LiggesMachler-2003-Scatterplot3d.pdf
+9-Nov,Multivariate Regression,16_GLModels.R,
+14-Nov,Neural Networks and Deep Learning,,Borowiec2022
+16-Nov,Data Visualization III,18_ggplot2_tools.R,
+Thanksgiving break,,,
+28-Nov,Canonical Correlations,19_Canonical_correlation.R,Gonzalez et al. 2008
+30-Nov,Ecological Niche Modeling I,In Prep,HijmansElith2017HandbookDismo.pdf
+5-Dec,Ecological Niche Modeling II,In Prep,
+7-Dec,Presence-Absence Matrices,20_PAMs.R,Soberon & Martinez-Gordillo 2012
+12-Dec,Final Project Presentations ,Show your code,

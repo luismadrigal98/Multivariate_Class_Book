@@ -1,0 +1,27 @@
+Date,Topic,R-code,Readings
+25-Aug,Introduction to the class,,Syllabus
+27-Aug,The Main Questions,,Ch. 2 Greenacre & Primicerio 2014; James & McCulloch 1990; Ter Braak 1998
+1-Sep,R fundamentals and Data Visualization I,01_Visualization.R,McInerny et al. 2014
+3-Sep,The Q and R views of a data matrix,02_QandR_dissimilarities.R,Faith et al. 1987; Ch.4 Greenacre & Primicerio 2014; Oksanen 2009
+8-Sep,Classification & Clustering: K-means,03_kmeans_clustering_Qroo_iris.R,"de la Maza & Soberon, 1998"
+10-Sep,Classification & Clustering Hierarchical clustering,04_Hierarchical_Clustering.R,"Kreft & Jetz, 2010; Ch.7 Greenacre & Primicerio 2014"
+15-Sep,Linear Algebra I,,SwarmsOnVectors.pdf
+17-Sep,Linear Algebra II,05_Transformations.R,May 1973; Farber & Kadmon 2003
+22-Sep,Linear Algebra III,06_SingularValueDecomposition.R,
+24-Sep,Principal Components I,07_PCAI.R,Soberon & Martinez-Gordillo 2012
+29-Sep,Principal Components II,08_PCAII.R,
+1-Oct,Principal Components III,09_PCAIII_Biplots.R,
+6-Oct,Correspondance Analysis,10_CorrespondanceAnalysis.R; evplot.R,
+8-Oct,Multidimensional Scaling I,11_MultidimensionalScaling.R,Kreft & Jetz 2010; Oksanen 2009
+13-Oct,Final Project Advances,Show your code,
+15-Oct,Multidimensional Scaling II,12_MDS_Biplots.R,BiplotGUI_Vignette.pdf; BiplotsGUIFeaturesManual.pdf
+20-Oct,Discriminant Function Analysis,13_DiscriminantAnalysis.R,14_TestingHomoscedastictyCovarMatrices.R
+22-Oct,Data Visualization II,15_VisualizationII.R,LiggesMachler-2003-Scatterplot3d.pdf
+27-Oct,Multivariate Regression,16_GLModels.R,
+29-Oct,Factor Analysis,17_FactorAnalysis.R,Leveau 2013
+3-Nov,Data Visualization III,18_ggplot2_tools.R,
+5-Nov,Canonical Correlations,19_Canonical_correlation.R,Gonzalez et al. 2008
+10-Nov,Ecological Niche Modeling I,In Prep,HijmansElith2017HandbookDismo.pdf
+12-Nov,Ecological Niche Modeling II,In Prep,
+17-Nov,Presence-Absence Matrices,20_PAMs.R,Soberon & Martinez-Gordillo 2012
+19-Nov,Final Project Presentations ,Show your code,

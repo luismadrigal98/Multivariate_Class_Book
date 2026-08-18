@@ -1,0 +1,1429 @@
+%% ===========================================================================
+%%  MULTIVARIATE DATA ANALYSIS — A Computational Companion with R
+%%  MS_LJMR edition. Revised course code (Soberon / Jimenez / Cobos) integrated
+%%  with the Machine-Learning course of Luis J. Madrigal-Roca.
+%%
+%%  Single-file LaTeX book. Compile:  pdflatex x3  (from the book/ directory)
+%%  Figures live in ../figs/ (see \graphicspath).
+%% ===========================================================================
+\documentclass[11pt,oneside]{book}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[scaled=0.92]{helvet}      % sans for headings
+\usepackage{microtype}
+\usepackage[a4paper,margin=1in,headheight=15pt]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{graphicx}
+\graphicspath{{../figs/}}
+\usepackage{booktabs,array}
+\usepackage{caption}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage[most,breakable]{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+%% ---- Wiley-inspired palette ----------------------------------------------
+\definecolor{wnavy}{HTML}{1F3B73}
+\definecolor{wwine}{HTML}{8C2D3A}
+\definecolor{wgold}{HTML}{C8A23A}
+\definecolor{wteal}{HTML}{2A7F7F}
+\definecolor{wgray}{HTML}{5B5B5B}
+\definecolor{codebg}{HTML}{F5F6F8}
+\definecolor{outbg}{HTML}{ECECEC}
+
+\hypersetup{colorlinks=true,linkcolor=wnavy,citecolor=wwine,urlcolor=wteal}
+\captionsetup{font=small,labelfont={bf,color=wnavy}}
+
+%% ---- Chapter / section styling (Wiley-like colored numerals) --------------
+\titleformat{\chapter}[display]
+  {\sffamily\bfseries}
+  {\raggedleft\color{wgray}\fontsize{60}{60}\selectfont\thechapter}
+  {6pt}
+  {\raggedright\color{wnavy}\Huge}
+  [\vspace{2pt}{\color{wgold}\titlerule[2pt]}]
+\titlespacing*{\chapter}{0pt}{10pt}{28pt}
+
+\titleformat{\section}
+  {\sffamily\Large\bfseries\color{wnavy}}{\thesection}{0.6em}{}
+\titleformat{\subsection}
+  {\sffamily\large\bfseries\color{wwine}}{\thesubsection}{0.6em}{}
+
+%% ---- Running headers -------------------------------------------------------
+\pagestyle{fancy}\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\chaptermark}[1]{\markboth{\thechapter.\ #1}{}}
+\fancyhead[L]{\sffamily\small\color{wgray}\leftmark}
+\fancyhead[R]{\sffamily\small\color{wgray}\thepage}
+
+%% ---- R code listing style --------------------------------------------------
+\lstdefinelanguage{Rlang}{
+  keywords={if,else,for,while,function,return,in,TRUE,FALSE,NULL,NA,library,
+    require,source,set.seed,data,matrix,c,list,scale,prcomp,princomp,eigen,svd,
+    kmeans,hclust,dist,cmdscale,lda,glm,cor,cov,table,factor,predict,rpart,
+    randomForest,train,nnet,cutree},
+  sensitive=true,
+  morecomment=[l]{\#},
+  morestring=[b]",
+  morestring=[b]'
+}
+\lstset{
+  language=Rlang,
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  keywordstyle=\color{wnavy}\bfseries,
+  commentstyle=\color{wteal}\itshape,
+  stringstyle=\color{wwine},
+  numbers=left,numberstyle=\tiny\color{wgray},numbersep=8pt,
+  showstringspaces=false,
+  breaklines=true,
+  frame=leftline,framerule=2pt,rulecolor=\color{wgold},
+  xleftmargin=14pt,aboveskip=10pt,belowskip=6pt,
+  columns=fullflexible,keepspaces=true
+}
+%% console-output style
+\lstdefinestyle{rout}{
+  language={},basicstyle=\ttfamily\footnotesize\color{black!85},
+  backgroundcolor=\color{outbg},numbers=none,frame=none,
+  xleftmargin=14pt,breaklines=true,aboveskip=4pt,belowskip=10pt,
+  columns=fullflexible,keepspaces=true
+}
+
+%% ---- Callout boxes ---------------------------------------------------------
+\newtcolorbox{keybox}[1][]{breakable,enhanced,colback=wnavy!6,colframe=wnavy,
+  boxrule=0.8pt,left=8pt,right=8pt,top=6pt,bottom=6pt,arc=2pt,
+  fonttitle=\sffamily\bfseries\color{white},coltitle=white,
+  colbacktitle=wnavy,title={Key idea},#1}
+\newtcolorbox{pitfall}[1][]{breakable,enhanced,colback=wwine!6,colframe=wwine,
+  boxrule=0.8pt,left=8pt,right=8pt,top=6pt,bottom=6pt,arc=2pt,
+  fonttitle=\sffamily\bfseries\color{white},coltitle=white,
+  colbacktitle=wwine,title={Pitfall},#1}
+\newtcolorbox{notebox}[1][]{breakable,enhanced,colback=wteal!6,colframe=wteal,
+  boxrule=0.8pt,left=8pt,right=8pt,top=6pt,bottom=6pt,arc=2pt,
+  fonttitle=\sffamily\bfseries\color{white},coltitle=white,
+  colbacktitle=wteal,title={From the ML course},#1}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\R}{\textsf{R}}
+\newcommand{\pkg}[1]{\textsf{#1}}
+
+\setlength{\parskip}{0.4em}
+\setlength{\parindent}{0pt}
+
+% ===========================================================================
+\begin{document}
+% ===========================================================================
+
+%% ---------------------------- TITLE PAGE ----------------------------------
+\begin{titlepage}
+\thispagestyle{empty}
+\newgeometry{margin=0pt}
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[wnavy] (current page.north west) rectangle ([yshift=-6.2cm]current page.north east);
+  \fill[wgold] ([yshift=-6.2cm]current page.north west) rectangle ([yshift=-6.55cm]current page.north east);
+\end{tikzpicture}
+\vspace*{1.2cm}
+\begin{flushleft}\hspace{1.6cm}
+\begin{minipage}{0.86\textwidth}
+  \color{white}\sffamily
+  {\fontsize{30}{34}\selectfont\bfseries Multivariate Data Analysis}\\[6pt]
+  {\LARGE A Computational Companion with \R}\\[10pt]
+  {\large\itshape from ordination to machine learning}
+\end{minipage}
+\end{flushleft}
+\vspace{6.4cm}
+\vspace{6.4cm}
+\begin{flushright}
+	\begin{minipage}{0.8\textwidth}\raggedleft\sffamily
+		{\Large\bfseries\color{wnavy} Jorge Sober\'on \;$\cdot$\; Laura Jim\'enez \;$\cdot$\; Marlon E. Cobos}\\[4pt]
+		{\large\color{wgray} revised and extended by}\\[2pt]
+		{\Large\bfseries\color{wwine} Luis J. Madrigal-Roca}\\[16pt]
+		{\color{wgray}\rule{0.5\textwidth}{0.8pt}}\\[6pt]
+		{\large\color{wgray}\textsc{MS\_LJMR edition}\;\textbullet\; Fall 2026}\\
+		{\small\color{wgray} The University of Kansas}
+	\end{minipage}\hspace*{2cm} % <-- Adjust this value to increase or decrease the right margin
+\end{flushright}
+\vfill
+\begin{center}\sffamily\small\color{wgray}
+  Machine-learning sessions integrated from the author's graduate ML course.
+\end{center}
+\vspace{1cm}
+\restoregeometry
+\end{titlepage}
+
+%% ---------------------------- COLOPHON ------------------------------------
+\thispagestyle{empty}
+\vspace*{\fill}
+\noindent{\sffamily\small\color{wgray}
+\textbf{Multivariate Data Analysis: A Computational Companion with \R} — MS\_LJMR edition.\\[4pt]
+This companion accompanies BIOL 943 (Multivariate Methods) at the University of Kansas.
+The original teaching scripts were written by Jorge Sober\'on, Laura Jim\'enez and
+Marlon E. Cobos. This edition revises them into a portable, reproducible code base
+(\code{MS\_LJMR/}) and integrates four machine-learning sessions adapted from the
+graduate ML course of Luis J. Madrigal-Roca.\\[6pt]
+\emph{Reproducibility note.} Every figure and numerical result in this book was produced
+from the accompanying code with fixed random seeds. As of the 2026-07-15 validation pass,
+the real course data files are present in \code{MS\_LJMR/data/} and \R{} (4.1.2) was used
+to actually execute all 19 scripts; 17 ran to completion, 1 (\code{08\_SVD.R}) failed
+because the real \code{Limenitis\_archippus.csv} has no header row and is read as a
+data frame rather than a numeric matrix, and 1 (\code{05\_Clustering.R}) partially failed
+because the real \code{BiodivCountries.csv} does not contain the diversity columns the
+hierarchical-clustering section expects. See \code{VALIDATION\_REPORT\_2026-07-15.md} at
+the repository root for the full per-script log. Where a script still could not find a
+matching real file (e.g.\ \code{hanta}, \code{pam}), a frozen demo file or seeded,
+structure-faithful simulation was used automatically so the listing still runs.\\[6pt]
+Text and code released under GPL-2, matching the original course material.}
+\vspace*{6cm}
+
+%% ---------------------------- CONTENTS ------------------------------------
+\tableofcontents
+
+%% ---------------------------- PREFACE -------------------------------------
+\chapter*{Preface}
+\addcontentsline{toc}{chapter}{Preface}
+\markboth{Preface}{}
+
+This book has one governing idea: \emph{almost everything in multivariate analysis
+is a statement about a data matrix and the geometry of its rows and columns}. A table
+of $n$ objects measured on $p$ variables can be read two ways — the \emph{Q view}
+(relationships among objects) and the \emph{R view} (relationships among variables) —
+and the great methods of the field are, at bottom, different ways of decomposing that
+one matrix. Principal components, correspondence analysis, discriminant analysis and
+even modern machine-learning embeddings all fall out of the same small set of linear-
+algebra moves: centering, scaling, distance, and eigen/singular-value decomposition.
+
+The material grew out of Dr. Jorge Sober\'on's Multivariate Methods course. The revised
+Fall-2026 schedule folds Principal Coordinate Analysis into the Principal Components
+sequence, retires the standalone visualization sessions, and adds four sessions on
+machine learning. This edition follows that schedule. It also rebuilds the course's \R{}
+scripts into a single, portable package, \code{MS\_LJMR/}, that runs on Windows, macOS,
+Linux and in batch mode without editing a single path.
+
+Each chapter follows the same rhythm: the \emph{idea} and its mathematics; the \emph{code}
+that expresses it; the \emph{output} it produces; and an \emph{interpretation} that says
+what the numbers and pictures mean. Boxes flag the one thing worth remembering
+(\textcolor{wnavy}{\textbf{Key idea}}), the trap that catches everyone
+(\textcolor{wwine}{\textbf{Pitfall}}), and the places where the machine-learning course
+connects back to the classical theory (\textcolor{wteal}{\textbf{From the ML course}}).
+
+%\begin{flushright}\itshape L.\,J.\,M.-R., Lawrence, Kansas\end{flushright}
+
+\mainmatter
+
+% ###########################################################################
+\part{Foundations}
+% ###########################################################################
+
+% ===========================================================================
+\chapter{The Multivariate Data Matrix}
+% ===========================================================================
+\section{Two views of one table}
+A multivariate data set is a matrix $\mathbf{X}$ with $n$ rows (objects, sites,
+specimens, samples) and $p$ columns (variables, traits, features). Nearly every
+technique in this book answers one of two questions about $\mathbf{X}$:
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Q~mode.} How similar are the \emph{objects} (rows)? This calls for a
+  \emph{dissimilarity} or distance between rows.
+  \item \textbf{R~mode.} How associated are the \emph{variables} (columns)? This calls
+  for a \emph{covariance} or correlation between columns.
+\end{itemize}
+
+\begin{keybox}
+The non-zero eigenvalues of $\mathbf{X}\mathbf{X}^{\!\top}$ (an $n\times n$, Q-mode matrix)
+and of $\mathbf{X}^{\!\top}\mathbf{X}$ (a $p\times p$, R-mode matrix) are \emph{identical}.
+This single fact is why the same decomposition can be read as an ordination of objects or
+of variables, and it underlies PCA, correspondence analysis and biplots alike.
+\end{keybox}
+
+\section{Centering, scaling, and why units matter}
+Raw variables usually live on incompatible scales (millimetres vs.\ millimetres of
+rainfall). Two operations put them on common footing. \emph{Centering} subtracts each
+column mean, moving the origin to the centroid; \emph{scaling} divides by each column
+standard deviation, making variances comparable. The combined $z$-transform,
+\[
+  z_{ij}=\frac{x_{ij}-\bar x_j}{s_j},
+\]
+is the default preprocessing for correlation-based methods. In \R{} it is one call,
+\code{scale()}, and the covariance of the scaled matrix \emph{is} the correlation matrix
+of the original.
+
+\section{Distance and dissimilarity}
+For the Q view we need a distance $d(i,h)$ between rows $i$ and $h$. The workhorse is
+Euclidean distance on standardized data,
+\[
+  d(i,h)=\sqrt{\textstyle\sum_{j=1}^{p}(z_{ij}-z_{hj})^2},
+\]
+but count and presence/absence data demand others (Bray--Curtis, Jaccard, $\chi^2$),
+and mixed numeric/categorical data demand Gower's coefficient. Choosing the distance is
+the single most consequential modelling decision in ordination — it decides what
+``close'' means before any algorithm runs.
+
+\begin{lstlisting}
+## Q-mode dissimilarity and R-mode correlation on Anderson's iris
+iris <- get_data("iris")
+Xs   <- scale(iris[, 1:4])          # z-transform (mean 0, sd 1)
+D    <- dist(Xs, method = "euclidean")   # 150 x 150 distances (Q view)
+R    <- cor(iris[, 1:4])            # 4 x 4 correlations       (R view)
+round(R, 2)
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+             Sepal.Length Sepal.Width Petal.Length Petal.Width
+Sepal.Length         1.00       -0.12         0.87        0.82
+Sepal.Width         -0.12        1.00        -0.43       -0.37
+Petal.Length         0.87       -0.43         1.00        0.96
+Petal.Width          0.82       -0.37         0.96        1.00
+\end{lstlisting}
+
+The correlation block (Figure~\ref{fig:corr}) shows the two petal variables almost
+perfectly correlated ($r=0.96$) and sepal width standing apart. In the Q view
+(Figure~\ref{fig:diss}), ordering the 150 objects by species reveals a clear block
+structure: \emph{setosa} forms a tight, well-separated block, while \emph{versicolor}
+and \emph{virginica} bleed into each other — a foreshadowing of every clustering and
+classification result later in the book.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.62\linewidth]{corr_heatmap.png}
+  \caption{R-mode correlation matrix of the four iris measurements. Petal length and
+  width are nearly collinear; sepal width is weakly and negatively related to the rest.}
+  \label{fig:corr}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.7\linewidth]{01_diss_image.png}
+  \caption{Q-mode Euclidean dissimilarity among the 150 iris objects (rows 1--50, 51--100,
+  101--150 are \emph{setosa}, \emph{versicolor}, \emph{virginica} respectively, so the
+  block structure follows automatically). Dark blocks on the diagonal are within-species
+  similarity; \emph{setosa} (first block) is sharply separated from the other two. Figure
+  regenerated by \code{01\_Dissimilarities.R} in the 2026-07-15 validation run.}
+  \label{fig:diss}
+\end{figure}
+
+\begin{pitfall}
+Distances computed on \emph{unstandardized} variables are dominated by whichever
+variable happens to have the largest numerical range. Always decide, deliberately,
+whether to scale — and remember that Euclidean distance is rarely appropriate for raw
+species counts.
+\end{pitfall}
+
+% ===========================================================================
+\chapter{The Linear Algebra of Ordination}
+% ===========================================================================
+\section{Transformations as matrices}
+Every linear operation on data — rotation, stretching, projection — is a matrix
+multiplication $\mathbf{Y}=\mathbf{U}\mathbf{X}$. A symmetric positive-definite matrix
+such as a covariance matrix has a \emph{spectral decomposition}
+$\mathbf{\Sigma}=\mathbf{V}\mathbf{\Lambda}\mathbf{V}^{\!\top}$, where the columns of
+$\mathbf{V}$ (the eigenvectors) are orthogonal directions and the diagonal of
+$\mathbf{\Lambda}$ (the eigenvalues) gives the variance along each. Geometrically, the
+eigenvectors are the axes of the data's dispersion ellipsoid and the eigenvalues are
+the squared semi-axis lengths. This is the engine of PCA.
+
+\section{The singular value decomposition}
+The most general and numerically stable move is the \emph{singular value decomposition}
+(SVD). Any $n\times p$ matrix factors as
+\[
+  \mathbf{X}=\mathbf{U}\,\mathbf{D}\,\mathbf{V}^{\!\top},
+\]
+with $\mathbf{U}$ ($n\times r$) and $\mathbf{V}$ ($p\times r$) orthonormal and
+$\mathbf{D}$ the diagonal of singular values $d_1\ge d_2\ge\cdots\ge 0$. Truncating to
+the first $k$ terms,
+$\mathbf{X}_k=\sum_{i=1}^{k} d_i\,\mathbf{u}_i\mathbf{v}_i^{\!\top}$, gives the best
+rank-$k$ approximation in the least-squares sense (Eckart--Young). SVD is simultaneously
+the basis of PCA, correspondence analysis, latent semantic analysis, and the low-rank
+compression we illustrate next.
+
+\begin{lstlisting}
+## Low-rank reconstruction of a grayscale wing image (Limenitis)
+G <- get_data("limenitis")          # 69 x 100 intensity matrix
+s <- svd(G)
+approx <- function(k) s$u[,1:k] %*% diag(s$d[1:k]) %*% t(s$v[,1:k])
+err <- sapply(c(1,5,10,50),
+              function(k) norm(G - approx(k), "F") / norm(G, "F"))
+round(err, 3)
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+[1] 0.197 0.087 0.077 0.020     # relative Frobenius error at rank 1, 5, 10, 50
+\end{lstlisting}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{svd_compression.png}
+  \caption{SVD compression of a wing image. A rank-1 layer captures the gross shading;
+  by rank 5 the structure is essentially recovered, and the singular-value spectrum
+  (below) explains why.}
+  \label{fig:svdc}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.56\linewidth]{svd_scree.png}
+  \caption{Singular-value spectrum (log scale). The rapid decay means a handful of
+  components carry most of the matrix's information — the premise of every dimension-
+  reduction method in Part II.}
+  \label{fig:svds}
+\end{figure}
+
+\begin{keybox}
+PCA is SVD applied to a centered (and usually scaled) data matrix. Correspondence
+analysis is SVD applied to a $\chi^2$-standardized contingency table. Latent semantic
+analysis is SVD applied to a term--document matrix. Learn SVD once; recognise it
+everywhere.
+\end{keybox}
+
+% ###########################################################################
+\part{Ordination and Dimension Reduction}
+% ###########################################################################
+
+% ===========================================================================
+\chapter{Principal Component Analysis}
+% ===========================================================================
+Principal Component Analysis (PCA) rotates the variables into a new orthogonal set of
+axes — the \emph{principal components} — ordered so that the first captures the most
+variance, the second the most of what remains, and so on. Following the revised
+schedule, this chapter also folds in \emph{Principal Coordinate Analysis} (PCoA), which
+we show is PCA seen through a distance matrix.
+
+\section{Three routes to the same answer}
+PCA can be computed as (i) the spectral decomposition of the correlation matrix
+$\mathbf{R}=\mathbf{V}\mathbf{\Lambda}\mathbf{V}^{\!\top}$, (ii) the SVD of the scaled
+data matrix, or (iii) \R's \code{princomp}/\code{prcomp}. All three return the same
+eigenvalues (component variances), loadings (the $\mathbf{V}$ axes), and scores (the
+rotated data $\mathbf{Z}=\mathbf{X}_s\mathbf{V}$). \code{prcomp} is preferred for
+numerical stability because it uses SVD directly.
+
+\begin{lstlisting}
+Xs   <- scale(as.matrix(iris[, 1:4]))
+R    <- cor(iris[, 1:4])
+eig  <- eigen(R)                     # by hand
+pc   <- prcomp(iris[, 1:4], scale. = TRUE)
+rbind(eigenvalue   = eig$values,
+      prop.var     = eig$values / sum(eig$values),
+      cumulative   = cumsum(eig$values / sum(eig$values)))
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+                  PC1      PC2      PC3      PC4
+eigenvalue   2.918498 0.914030 0.146757 0.020715
+prop.var     0.729624 0.228508 0.036689 0.005179
+cumulative   0.729624 0.958132 0.994821 1.000000
+\end{lstlisting}
+
+Two components already carry $95.8\%$ of the variance. The equivalence of the routes is
+not merely asserted — the code aligns signs and checks
+$\max|\,\text{hand scores}-\text{\code{prcomp} scores}\,|\approx 10^{-15}$.
+
+\subsection{Theory: PCA as a variance-maximization problem}
+The first principal component is the unit vector $\mathbf{v}_1$ that maximises the
+variance of the projected data $\mathbf{X}_s\mathbf{v}$. With $\mathbf{R}$ the
+correlation matrix, this is
+\[
+  \mathbf{v}_1=\arg\max_{\|\mathbf v\|=1}\ \mathbf v^{\!\top}\mathbf R\,\mathbf v .
+\]
+Introducing a Lagrange multiplier $\lambda$ for the constraint $\mathbf v^{\!\top}\mathbf v=1$
+and differentiating $\mathbf v^{\!\top}\mathbf R\mathbf v-\lambda(\mathbf v^{\!\top}\mathbf v-1)$
+gives the eigen-equation
+\[
+  \mathbf R\,\mathbf v=\lambda\,\mathbf v,
+\]
+so the maximiser is the eigenvector of $\mathbf R$ with the largest eigenvalue, and that
+eigenvalue \emph{is} the variance captured, $\mathbf v_1^{\!\top}\mathbf R\mathbf v_1=\lambda_1$.
+Each subsequent component maximises the remaining variance subject to orthogonality with
+the previous ones, yielding the full eigenbasis $\mathbf R=\mathbf V\mathbf\Lambda\mathbf V^{\!\top}$.
+Because $\sum_j\lambda_j=\operatorname{tr}(\mathbf R)=p$ (here $p=4$), the proportion of
+variance on component $j$ is simply $\lambda_j/p$ — the numbers in the table above.
+
+\section{How many components? The scree plot}
+The \emph{scree plot} graphs eigenvalue against component index; one keeps components
+before the ``elbow.'' The \emph{Kaiser rule} keeps components with eigenvalue $>1$
+(more variance than a single standardized variable). For iris both rules agree on two.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.56\linewidth]{09_pca_scree.png}
+  \caption{Iris PCA scree plot. Only the first two components exceed the Kaiser
+  threshold (dashed line at eigenvalue $=1$). Figure regenerated by \code{09\_PCA.R}
+  in the 2026-07-15 validation run.}
+  \label{fig:pcascree}
+\end{figure}
+
+\section{The biplot}
+A \emph{biplot} overlays object scores and variable loadings in one picture. Points are
+objects in PC space; arrows are variables, their direction showing which components they
+drive and their projection onto an axis showing their contribution.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.66\linewidth]{09_pca_biplot.png}
+  \caption{Iris PCA biplot. PC1 separates \emph{setosa} (left) from the others and is
+  driven by the three positively-correlated size variables; sepal width points downward,
+  loading on PC2. Figure regenerated by \code{09\_PCA.R} in the 2026-07-15 validation run.}
+  \label{fig:pcabi}
+\end{figure}
+
+\section{PCoA: PCA through a distance matrix}
+Principal Coordinate Analysis (Gower, 1966) takes a \emph{distance} matrix and finds
+coordinates whose Euclidean distances reproduce it — classical (metric) MDS. When the
+input distance is Euclidean on the same standardized data, PCoA returns the PCA scores
+exactly. This is why the standalone PCoA session is folded here: it is the same
+eigen-problem, generalised to non-Euclidean distances (Gower, Bray--Curtis), which lets
+it ordinate mixed-type or count data that PCA cannot.
+
+\begin{lstlisting}
+D    <- dist(scale(iris[, 1:4]))     # Euclidean distance
+pcoa <- cmdscale(D, k = 2, eig = TRUE)
+cor(pcoa$points[,1], prcomp(iris[,1:4], scale.=TRUE)$x[,1])   # ~ 1.000
+\end{lstlisting}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.56\linewidth]{09_pcoa_vs_pca.png}
+  \caption{PCoA on a Euclidean distance reproduces the PCA ordination point for point.
+  For non-Euclidean distances PCoA generalises PCA to data types PCA cannot handle.}
+  \label{fig:pcoa}
+\end{figure}
+
+\begin{pitfall}
+PCA on the \emph{covariance} matrix lets high-variance variables dominate; on the
+\emph{correlation} matrix (scaled data) it treats variables even-handedly. State which
+you used — they can give qualitatively different ordinations.
+\end{pitfall}
+
+% ===========================================================================
+\chapter{Correspondence Analysis}
+% ===========================================================================
+Correspondence Analysis (CA) is PCA adapted to \emph{counts} — contingency tables of
+non-negative integers, such as species abundances across sites. Instead of Euclidean
+distance it uses the $\chi^2$ distance, and it ordinates rows (sites) and columns
+(species) \emph{simultaneously}, because it is the SVD of a single $\chi^2$-standardized
+matrix (recall the Q/R eigenvalue identity from Chapter~1).
+
+\section{The mechanics}
+Let $\mathbf{P}=\mathbf{N}/n_{\!++}$ be the table of relative frequencies with row and
+column masses $\mathbf{r},\mathbf{c}$. CA takes the SVD of
+$\mathbf{S}=\mathbf{D}_r^{-1/2}(\mathbf{P}-\mathbf{r}\mathbf{c}^{\!\top})\mathbf{D}_c^{-1/2}$.
+The squared singular values are the \emph{inertias} (variance explained per axis).
+
+\begin{lstlisting}
+library(vegan)
+fish <- get_data("doubs")$fish      # 30 sites x 27 fish species (counts)
+ca   <- cca(fish)                    # correspondence analysis in vegan
+round(ca$CA$eig / sum(ca$CA$eig), 3)[1:4]
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+Inertia (eigenvalues) and proportion per axis:
+          CA1    CA2    CA3    CA4
+inertia 0.601 0.1444 0.1073 0.0834
+prop    0.515 0.1237 0.0919 0.0714
+\end{lstlisting}
+
+In the 2026-07-15 validation run \code{ade4} was available, so \code{get\_data("doubs")}
+loaded the \emph{genuine} \code{ade4::doubs} river-fish data set rather than the frozen
+demo used when the book was first assembled; the inertias above are the real values (the
+first axis alone now carries $51.5\%$ of the total inertia, versus the demo's $31.7\%$).
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.62\linewidth]{14_ca_biplot.png}
+  \caption{CA of the real Doubs river fish gradient (\code{ade4::doubs}, scaling 1: sites).
+  Sites and species share the same space; the first axis recovers the longitudinal
+  gradient of the river. Figure regenerated by \code{14\_CorrespondenceAnalysis.R} in the
+  2026-07-15 validation run.}
+  \label{fig:ca}
+\end{figure}
+
+\begin{pitfall}
+Long ecological gradients induce the \emph{arch (horseshoe) effect} in CA — a curved
+smile with no real second gradient. Detrended CA (\code{decorana}) removes it, but treat
+detrending as a diagnostic, not a default.
+\end{pitfall}
+
+% ===========================================================================
+\chapter{Multidimensional Scaling}
+% ===========================================================================
+Where PCA and CA are eigen-methods, \emph{non-metric multidimensional scaling} (nMDS)
+is an \emph{optimisation}. It seeks a low-dimensional configuration whose inter-point
+distances preserve the \emph{rank order} of the original dissimilarities, minimising a
+badness-of-fit criterion called \emph{stress}. It makes no distributional assumptions and
+accepts any dissimilarity, which makes it the most flexible ordination in the toolbox.
+
+\begin{lstlisting}
+library(vegan)
+cars <- get_data("mtcars")                       # 32 cars x 11 variables (built-in)
+md <- metaMDS(cars, distance = "euclidean", k = 2)   # random-start optimisation
+md$stress                                        # < 0.1 good, < 0.2 usable
+stressplot(md)                                   # Shepard diagram
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+nMDS stress: 1e-04   (<0.05 excellent, <0.1 good, <0.2 usable)
+
+Procrustes correlation (Euclidean vs Gower): 0.888   p = 0.001
+\end{lstlisting}
+
+On the 32-car \code{mtcars} table (11 dimensions ordinated into 2) stress is essentially
+zero, which \pkg{vegan} itself flags with \emph{``stress is (nearly) zero: you may have
+insufficient data''} — a useful, real reminder that a perfect-looking nMDS map can simply
+mean the object-to-dimension ratio is too generous, not that the method is unusually good.
+A Procrustes test comparing the Euclidean- and Gower-distance solutions gives a correlation
+of $0.888$ ($p=0.001$), confirming the two distance choices largely agree on this data.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{15_mds.png}
+  \caption{Left: the nMDS configuration of \code{mtcars}. Right: the Shepard diagram plots
+  configuration distance against original distance; a tight, monotone increasing cloud
+  means the low-dimensional map faithfully preserves the dissimilarity ranks. Figure
+  regenerated by \code{15\_MDS.R} in the 2026-07-15 validation run.}
+  \label{fig:mds}
+\end{figure}
+
+\begin{keybox}
+Stress is an optimisation score, not a probability. A low stress means the picture is a
+faithful map of the distances; it does \emph{not} certify that the distance you chose was
+the right question. Garbage distance in, low-stress garbage out.
+\end{keybox}
+
+% ===========================================================================
+\chapter{Non-negative Matrix Factorization}
+% ===========================================================================
+Non-negative Matrix Factorization (NMF) approximates a non-negative data matrix as
+$\mathbf{A}\approx\mathbf{W}\mathbf{H}$ with \emph{both} factors non-negative. Because
+nothing can cancel, the columns of $\mathbf{W}$ act as additive ``parts'' (metagenes,
+motifs, topics) and the columns of $\mathbf{H}$ are the amounts of each part in each
+sample. The non-negativity buys interpretability that PCA's signed loadings lack.
+
+\begin{lstlisting}
+library(NMF)
+expr <- get_data("leukemia")         # real file: 1000 genes x 60 patients (5 subtypes)
+res  <- nmf(expr - min(expr), rank = 3, seed = "nndsvd")
+basismap(res); coefmap(res)          # W (gene signatures) and H (sample loadings)
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+NMF rank 3:  W 1000 x 3   H 3 x 60   residual 266.8
+\end{lstlisting}
+
+With the real \code{leukemiaExpressionSubset.rds} file (1000 genes $\times$ 60 patients)
+the sample labels resolve to \emph{five} clinical subtypes — ALL, AML, CLL, CML and
+``NoL'' (no leukemia) — rather than the three assumed when this chapter was first
+written. A rank-3 factorization therefore cannot separate all five cleanly: CLL forms its
+own factor perfectly, but CML, NoL and most of AML collapse onto a single shared factor
+while ALL and part of AML share another. This is itself a useful lesson — the correct
+NMF rank should match the number of real subtypes, and checking that is exactly what this
+cross-tabulation is for.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{17_nmf.png}
+  \caption{Rank-3 NMF of the real leukemia expression matrix. Left: the basis $\mathbf{W}$
+  (three gene signatures). Right: the coefficients $\mathbf{H}$; CLL separates cleanly,
+  while the other four real subtypes only partly resolve at rank 3. Figure regenerated by
+  \code{17\_NMF.R} in the 2026-07-15 validation run.}
+  \label{fig:nmf}
+\end{figure}
+
+% ===========================================================================
+\chapter{Exploratory Factor Analysis}
+% ===========================================================================
+Factor analysis (FA) looks superficially like PCA but rests on a different model. PCA
+re-expresses \emph{all} the variance with components that are exact linear combinations
+of the variables. FA posits a small number of unobserved \emph{common factors} that
+generate the correlations among variables, and it explicitly separates shared variance
+from variable-specific noise.
+
+\section{The model}
+With $p$ standardized variables and $k<p$ latent factors $\mathbf f$,
+\[
+  \mathbf x=\mathbf\Lambda\,\mathbf f+\boldsymbol\varepsilon,\qquad
+  \operatorname{Cov}(\mathbf x)=\mathbf\Lambda\mathbf\Lambda^{\!\top}+\mathbf\Psi,
+\]
+where $\mathbf\Lambda$ ($p\times k$) holds the \emph{loadings}, $\mathbf f$ are the
+common factors (uncorrelated, unit variance), and $\mathbf\Psi$ is a diagonal matrix of
+\emph{uniquenesses} — the part of each variable not explained by the common factors. The
+key contrast with PCA is that term $\mathbf\Psi$: FA does not try to fit variable-specific
+variance, only the \emph{common} structure. Estimation is by maximum likelihood, and the
+loadings are then \emph{rotated} (e.g.\ varimax) to a more interpretable, near-simple
+structure.
+
+\begin{lstlisting}
+X  <- scale(get_data("taxon")[, -1])
+fa <- factanal(X, factors = 2, rotation = "varimax")
+round(eigen(cor(X))$values, 3)          # how many factors?
+print(fa$loadings, digits = 2, cutoff = 0.2)
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+Correlation-matrix eigenvalues:
+[1] 1.521 1.229 1.081 0.985 0.949 0.863 0.373     # THREE exceed 1 (Kaiser) on the real data
+
+Factor loadings (varimax, factors = 2 as coded):
+          Factor1 Factor2
+Petals      -0.46    0.13
+Internode    0.03    0.07
+Sepal        0.19   -0.12
+Bract        0.08   -0.10
+Petiole      0.96    0.27
+Leaf        -0.18    0.98
+Fruit        0.22    0.01
+
+Uniquenesses:
+   Petals Internode     Sepal     Bract   Petiole      Leaf     Fruit
+     0.77      0.99      0.95      0.98      0.00      0.00      0.95
+
+Likelihood-ratio test that 2 factors suffice: p = 0.1081
+\end{lstlisting}
+
+With the real \code{taxon.csv} file, the Kaiser rule (eigenvalue $>1$) actually points to
+\emph{three} factors, not two — but \code{16\_FactorAnalysis.R} fits a fixed
+\code{factors\,=\,2}, so the numbers above are the two-factor solution the script actually
+produces. Reassuringly, the likelihood-ratio test does not reject the two-factor model
+($p=0.11$), so two factors are a defensible simplification even though a third eigenvalue
+clears the Kaiser threshold. The loading pattern also changed with real data: \code{Petiole}
+and \code{Leaf} are now almost entirely explained by the common factors (uniqueness
+$\approx 0$), while \code{Internode} and \code{Bract} are almost entirely
+variable-specific noise (uniqueness $\approx 1$) — the opposite emphasis from the earlier
+placeholder loadings.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.5\linewidth]{16_fa_scree.png}
+  \caption{Scree of the correlation-matrix eigenvalues on the real taxon data; three points
+  now clear the Kaiser line (eigenvalue $=1$), though the script retains the classroom's
+  two-factor solution. Figure regenerated by \code{16\_FactorAnalysis.R} in the 2026-07-15
+  validation run.}
+  \label{fig:fa}
+\end{figure}
+
+\begin{pitfall}
+PCA and FA are not interchangeable. Use PCA to \emph{reduce} dimensionality (summarise
+total variance); use FA to \emph{explain} correlations by latent constructs. Reporting
+PCA loadings as ``factors'' — a common slip — conflates the two models.
+\end{pitfall}
+
+% ###########################################################################
+\part{Classification and Association}
+% ###########################################################################
+
+% ===========================================================================
+\chapter{Clustering}
+% ===========================================================================
+Clustering partitions objects into groups without using labels. We cover the two
+classroom workhorses: \emph{k-means} (partition around $k$ centroids) and
+\emph{hierarchical} clustering (a nested tree, or dendrogram).
+
+\section{k-means and the elbow}
+k-means minimises the total within-cluster sum of squares (WSS). Because WSS always
+decreases with $k$, we look for the \emph{elbow} where added clusters stop paying off.
+
+\begin{lstlisting}
+w <- wss(as.matrix(iris[,1:4]))      # WSS for k = 1..10 (helper in 05_Clustering.R)
+plot(w, type = "b"); abline(v = 3, lty = 2)
+km3 <- kmeans(iris[,1:4], 3, nstart = 25)
+table(cluster = km3$cluster, species = iris$Species)
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+       species
+cluster setosa versicolor virginica
+      1      0         48        14
+      2      0          2        36
+      3     50          0         0
+
+Agreement (max assignment) = 0.893
+\end{lstlisting}
+
+The elbow sits at $k=3$ (Figure~\ref{fig:elbow}). The cross-tabulation shows the
+unsupervised clusters recover the species with $89.3\%$ agreement: \emph{setosa}
+is perfect (its own cluster, 3 above), while \emph{versicolor}/\emph{virginica} overlap
+(clusters 1 and 2) — exactly the structure the Q-mode heatmap warned about in Chapter~1.
+(Cluster \emph{numbers} are arbitrary — k-means does not know the species labels — so the
+identity of ``cluster 1'' vs ``cluster 3'' is not itself meaningful, only the partition.)
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.52\linewidth]{05_kmeans_elbow.png}\hfill
+  \includegraphics[width=0.44\linewidth]{05_kmeans_pairs.png}
+  \caption{Left: k-means elbow — WSS drops sharply to $k=3$ then flattens. Right: pairwise
+  scatterplots of the four iris measurements coloured by $k=3$ cluster assignment; the
+  \emph{setosa} cluster separates cleanly on every pair involving petal measurements, while
+  the other two clusters overlap along the versicolor/virginica boundary. Figures
+  regenerated by \code{05\_Clustering.R} in the 2026-07-15 validation run.}
+  \label{fig:elbow}
+\end{figure}
+
+\section{Hierarchical clustering and linkage}
+Agglomerative clustering repeatedly merges the two closest groups. The \emph{linkage}
+rule defines ``closest'': single (nearest point, chains), complete (farthest point,
+compact), average (UPGMA), and Ward (minimum variance, the ecologist's default).
+
+\begin{pitfall}
+\textbf{Not updated (script failed) — 2026-07-15 validation.} With the real
+\code{BiodivCountries.csv} in place, \code{05\_Clustering.R} fails at the line
+\code{biodiv[, c("Amphibians","Reptiles","Birds","Mammals","AmphDiv","ReptDiv",
+"BirdDiv","MamDiv")]}: the real file uses different richness-column names
+(\code{AmphRich}, \code{Rept\_rich}, \code{BirdRich}, \code{MamsRich}) and has no
+diversity-suffixed (\code{*Div}) columns at all. The figure and dendrogram below are
+therefore the \emph{original} placeholder, not a 2026-07-15 regeneration — see
+\code{VALIDATION\_REPORT\_2026-07-15.md} for the full traceback.
+\end{pitfall}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.7\linewidth]{hclust_dendrogram.png}
+  \caption{Ward dendrogram of world regions clustered on standardized biodiversity
+  variables. Cutting the tree at a chosen height yields discrete groups.}
+  \label{fig:dendro}
+\end{figure}
+
+\begin{pitfall}
+k-means depends on the random initial centroids; always use \code{nstart} $>1$ (we use
+25) so the reported solution is the best of many restarts, not a lucky or unlucky one.
+Different linkages can produce very different trees from the \emph{same} distances — the
+choice is substantive, not cosmetic.
+\end{pitfall}
+
+% ===========================================================================
+\chapter{Discriminant Analysis}
+% ===========================================================================
+Discriminant analysis is \emph{supervised} ordination: given labelled groups, it finds
+the axes that best \emph{separate} them. Linear Discriminant Analysis (LDA) maximises the
+ratio of between-group to within-group variance, assuming equal group covariances;
+Quadratic DA (QDA) relaxes that assumption.
+
+\subsection{Theory: Fisher's criterion}
+Let $\mathbf B$ be the between-group and $\mathbf W$ the within-group scatter matrix.
+Fisher sought the direction $\mathbf a$ maximising the separation ratio
+\[
+  J(\mathbf a)=\frac{\mathbf a^{\!\top}\mathbf B\,\mathbf a}{\mathbf a^{\!\top}\mathbf W\,\mathbf a}.
+\]
+Setting $\partial J/\partial\mathbf a=\mathbf 0$ yields the \emph{generalized}
+eigenproblem $\mathbf B\mathbf a=\ell\,\mathbf W\mathbf a$, i.e.\ the ordinary eigenproblem
+$\mathbf W^{-1}\mathbf B\,\mathbf a=\ell\,\mathbf a$. The leading eigenvectors are the
+discriminant axes and their eigenvalues (the ``proportion of trace'') say how much group
+separation each axis carries. With $g$ groups there are at most $g-1$ such axes — here,
+three for four taxa.
+
+\begin{lstlisting}
+library(MASS); library(vegan)
+d  <- vegdist(taxon[, -1], method = "euclidean")
+betadisper(d, taxon$Taxon) |> permutest()   # check the equal-covariance assumption
+model <- lda(Taxon ~ ., data = train)       # taxon: 4 morphometric groups
+pred  <- predict(model, test)$class
+mean(pred == test$Taxon)                    # hold-out accuracy
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+Homogeneity of dispersions (permutation test):
+       Df  Sum Sq   Mean Sq        F N.Perm Pr(>F)
+Groups  3 1.85191 0.6173032 1.384027    999  0.265
+\end{lstlisting}
+
+The permutation test does not reject equal dispersions ($p=0.265$; \code{vegan::permutest}
+has no fixed seed in the script, so this exact p-value shifts slightly run to run -- the
+2026-07-15 validation pass gives 0.265, comfortably in the same non-significant range as
+earlier passes), so the LDA assumption
+is reasonable here.
+
+\begin{lstlisting}[style=rout]
+Confusion matrix (held-out test):
+     predicted
+true   I II III IV
+  I   12  0   0  0
+  II   0  9   0  0
+  III  0  0  10  0
+  IV   0  0   0  9
+Hold-out accuracy: 1       # perfect separation on held-out data (well-separated groups)
+
+QDA hold-out accuracy: 0.95
+\end{lstlisting}
+
+LDA reaches perfect hold-out accuracy on the real \code{taxon.csv} morphometrics; relaxing
+the equal-covariance assumption with QDA is very slightly \emph{worse} here (0.95 vs.\
+1.00), consistent with the permutation test above not rejecting homogeneity of dispersions
+— when covariances really are similar across groups, LDA's extra assumption costs nothing
+and its lower variance (fewer parameters) can even edge out QDA.
+
+Figure~\ref{fig:lda} makes the point of supervision vivid: PCA, which never sees the
+labels, smears the four groups along directions of raw variance; LDA, which uses them,
+opens clean gaps. That gain is real when groups differ, and illusory when they do not —
+hence the assumption checks below.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{lda_vs_pca.png}
+  \caption{The same four-group data under PCA (left, unsupervised) and LDA (right,
+  supervised). LDA's axes are built to separate the known classes.}
+  \label{fig:lda}
+\end{figure}
+
+\begin{pitfall}
+LDA assumes multivariate normality and \emph{equal covariance matrices} across groups.
+Test the second assumption (e.g.\ \code{vegan::betadisper} with a permutation test)
+before trusting an LDA; when it fails, prefer QDA or a tree-based classifier from the
+next chapter.
+\end{pitfall}
+
+% ===========================================================================
+\chapter{Multivariate Generalized Linear Models}
+% ===========================================================================
+Ordinary regression assumes a continuous, unbounded response with Gaussian, constant-
+variance errors. Ecological responses rarely oblige: biomass is positive, counts are
+integers, presence is binary. \emph{Generalized linear models} (GLMs) keep the linear
+predictor $\eta=\mathbf x^{\!\top}\boldsymbol\beta$ but connect it to the mean through a
+\emph{link} function and allow a non-Gaussian error \emph{family}.
+
+\section{Link and family}
+A GLM has three parts: a linear predictor $\eta$; a link $g$ with $g(\mu)=\eta$; and an
+exponential-family distribution for the response. Choose the family by the response type
+— Gamma (log link) for positive continuous data, Poisson (log link) for counts, binomial
+(logit link) for 0/1 — and fit by iteratively reweighted least squares.
+
+\begin{lstlisting}
+m <- get_data("crawley")            # mixed-type ecological table
+shapiro.test(m$Biomass)$p.value     # small p => Gaussian OLS is wrong
+g_gamma <- glm(Biomass ~ Tmp + pH, family = Gamma(link = "log"), data = m)
+g_pois  <- glm(Species ~ Tmp + pH, family = poisson,             data = m)
+AIC(g_pois, glm(Species ~ Tmp * pH, family = poisson, data = m))  # additive vs interaction
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+Shapiro-Wilk on Biomass: 6e-04      # reject normality -> use a GLM
+
+Gamma GLM (Biomass ~ Tmp + pH), log link:
+            Estimate Std. Error t value Pr(>|t|)
+(Intercept)  -2.7099     0.5359 -5.0571        0
+Tmp          -0.1106     0.0126 -8.7462        0
+pH            0.7994     0.0902  8.8618        0
+
+Poisson GLM (Species ~ Tmp + pH) coefficients:
+(Intercept)         Tmp          pH
+     1.5003      0.0768      0.0192
+
+AIC additive vs interaction (Poisson):
+       df      AIC
+g_pois  3 462.9810
+g_int   4 449.8897              # interaction IS worth the extra parameter here
+\end{lstlisting}
+
+The Shapiro test rejects normality of the (right-skewed) biomass ($p=6\times10^{-4}$),
+justifying the GLM; the coefficients live on the log scale, so $e^{\beta}$ is a
+multiplicative effect on the mean. On the real \code{speciesCrawley3.csv} table biomass
+\emph{falls} with temperature and \emph{rises} with pH (opposite signs from the earlier
+placeholder), and — unlike the placeholder — AIC now clearly \emph{prefers the interaction
+model} for species counts: adding \code{Tmp*pH} drops AIC from $462.98$ to $449.89$, a
+$13$-point improvement, meaning the temperature effect on species richness depends on
+soil pH rather than acting additively.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{19_glm.png}
+  \caption{GLM fits: a Gamma model for positive-continuous biomass (left) and a Poisson
+  model for species counts (right). The link keeps predictions in the valid range that a
+  straight OLS line would violate.}
+  \label{fig:glm}
+\end{figure}
+
+\begin{pitfall}
+Poisson regression assumes mean $=$ variance. Real counts are often \emph{overdispersed}
+(variance $>$ mean); then use a quasi-Poisson or negative-binomial family, or the standard
+errors will be too small and everything looks significant.
+\end{pitfall}
+
+% ===========================================================================
+\chapter{Canonical Correlation and Redundancy Analysis}
+% ===========================================================================
+The final classical methods generalise correlation and regression from vectors to
+\emph{two tables}. Canonical Correlation Analysis (CCorA) is the two-table analogue of
+correlation — symmetric, no direction. Redundancy Analysis (RDA) is the two-table
+analogue of regression — directional, one table explained by the other.
+
+\section{Canonical correlation}
+Given tables $\mathbf X$ ($n\times p$) and $\mathbf Y$ ($n\times q$), CCorA finds pairs of
+linear combinations $\mathbf X\mathbf a$ and $\mathbf Y\mathbf b$ with maximal
+correlation, then a second orthogonal pair, and so on. The canonical correlations are the
+square roots of the eigenvalues of
+$\mathbf R_{xx}^{-1}\mathbf R_{xy}\mathbf R_{yy}^{-1}\mathbf R_{yx}$, and Pillai's trace
+(with a permutation test) assesses whether the two tables are associated at all.
+
+\begin{lstlisting}
+doubs <- get_data("doubs")
+Y <- decostand(doubs$fish, "hellinger")    # response table (fish)
+X <- scale(doubs$env)                       # predictor table (environment)
+CCorA(scale(doubs$fish), X)$p.perm          # are the tables associated?
+rda.mod <- rda(Y ~ ., data = as.data.frame(X))   # directional: fish ~ environment
+RsquareAdj(rda.mod)$adj.r.squared
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+Canonical correlation (CCorA):
+  Pillai trace p (permutation) = 0.091
+  canonical correlations       = 1, 1, 1
+
+RDA variance partition:
+  constrained unconstrained
+        0.731         0.269
+Adjusted R^2: 0.558
+Global test (anova.cca) p = 0.005
+\end{lstlisting}
+
+On the real \code{ade4::doubs} data (29 sites with fish present, 27 species vs.\ 6
+environmental variables) the leading canonical correlations come out as exactly $1$. With
+$p_Y=27$ species columns and only $n\approx29$ sites, the fish table has more dimensions
+than the sample size can constrain, so a perfect canonical fit here is an
+\textbf{overfitting artifact of $p_Y\gg n$}, not evidence of a truly deterministic
+relationship — the Pillai-trace permutation test is the more trustworthy summary, and it
+is only marginal ($p=0.091$). The directional RDA is more informative: environment
+explains $73.1\%$ of the (Hellinger-transformed) fish variance, an adjusted $R^2$ of
+$0.558$ after correcting for the six predictors, and the global permutation test is clearly
+significant ($p=0.005$).
+
+\begin{pitfall}
+A saturated or near-saturated canonical correlation (all roots $\approx1$) is often a
+red flag for $p\gg n$, not a strong result. Always check the ratio of variables to
+observations on the higher-dimensional table before trusting CCorA at face value; RDA's
+adjusted $R^2$ and permutation test are more robust in this regime.
+\end{pitfall}
+
+\section{Redundancy analysis}
+RDA regresses \emph{every} response variable on the predictors, collects the fitted
+values into a matrix, and runs a PCA on that fitted matrix. The variance thus splits into
+a \emph{constrained} part (explained by $\mathbf X$) and an \emph{unconstrained} part
+(residual), and an \emph{adjusted} $R^2$ corrects the optimistic raw fraction for the
+number of predictors. A permutation test (\code{anova.cca}) provides overall
+significance, and \code{ordiR2step} does forward selection of predictors.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.66\linewidth]{20_rda.png}
+  \caption{RDA triplot: sites (points), species (text) and environmental predictors
+  (arrows). Arrow length and direction show which gradients drive community composition;
+  this is multivariate multiple regression made visual.}
+  \label{fig:rda}
+\end{figure}
+
+\begin{keybox}
+Canonical correlation asks ``are these two tables related?'' (symmetric); redundancy
+analysis asks ``how much of table $\mathbf Y$ does table $\mathbf X$ explain?''
+(directional). RDA is the multivariate regression that closes the classical half of the
+course — and it partitions variance exactly as an ANOVA does, but for a whole community
+at once.
+\end{keybox}
+
+% ###########################################################################
+\part{Machine Learning}
+% ###########################################################################
+
+% ===========================================================================
+\chapter{Supervised Machine Learning}
+% ===========================================================================
+This chapter integrates the \pkg{CART} and \pkg{caret} units of the machine-learning
+course. The classical classifiers of Chapter~8 assume a functional form; tree-based
+learners instead \emph{partition} the feature space with axis-aligned splits, capturing
+interactions and non-linearities with no distributional assumptions.
+
+\section{From one tree to a forest}
+A single decision tree (CART) is interpretable but high-variance. Three ensemble ideas
+tame that variance: \emph{bagging} averages trees on bootstrap samples; the
+\emph{random forest} additionally de-correlates them by sampling variables at each split;
+\emph{boosting} grows trees sequentially, each correcting its predecessor.
+
+\begin{notebox}
+The code here is lifted, lightly adapted, from the \code{UnitCART} and \code{UnitCARET}
+scripts of the ML course (both graded S+). The pedagogical move is to present trees and
+forests as the supervised cousins of the clustering and ordination methods students have
+already met — same data matrix, new objective.
+\end{notebox}
+
+\begin{lstlisting}
+library(rpart); library(randomForest); library(caret)
+set.seed(1998)
+idx   <- createDataPartition(iris$Species, p = 0.7, list = FALSE)
+train <- iris[idx, ]; test <- iris[-idx, ]
+
+fit_cart <- rpart(Species ~ ., data = train, method = "class")
+fit_rf   <- randomForest(Species ~ ., data = train, ntree = 500, importance = TRUE)
+
+## one interface, honest 5-fold CV, automatic tuning
+ctrl <- trainControl(method = "cv", number = 5)
+m_rf <- train(Species ~ ., data = train, method = "rf", trControl = ctrl)
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+Single CART test accuracy: 0.956
+Random-forest test accuracy: 0.956
+
+Cross-validated accuracy (caret resamples):
+           Mean   Median     Max.
+rpart 0.9428571 0.952381 0.952381
+rf    0.9333333 0.952381 1.000000
+gbm   0.9523810 0.952381 1.000000
+
+Best model: gbm
+Test accuracy: 0.956
+\end{lstlisting}
+
+On iris all three land in the $0.93$--$0.95$ range under honest 5-fold CV, with gradient
+boosting selected as the best-tuned model here (mean CV accuracy $0.952$) and confirming
+$0.956$ accuracy on the held-out test set; the value of the forest and boosting shows on
+harder, noisier problems, where a single tree overfits.
+
+\begin{pitfall}
+\textbf{Not updated (figure has no current equivalent) — 2026-07-15 validation.} The
+figure below (\code{ml\_decision\_boundaries.png}) predates the current
+\code{25\_SupervisedML.R}, which does not generate a matching decision-boundary panel; it
+is left in place as a conceptual illustration rather than a literal script output.
+\end{pitfall}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{ml_decision_boundaries.png}
+  \caption{Decision boundaries on the two petal variables. The single CART tree (left)
+  uses a few axis-aligned cuts; the random forest (middle) and gradient boosting (right)
+  produce smoother, more robust partitions.}
+  \label{fig:mlbound}
+\end{figure}
+
+\begin{pitfall}
+\textbf{Validation finding, 2026-07-15.} \code{with\_fig("25\_caret\_compare",
+\{dotplot(res, ...)\})} opens and closes the PNG device cleanly (no error, exit status 0),
+but \code{dotplot()} returns a \pkg{lattice} trellis object that is only drawn when
+auto-printed at the top level; wrapped inside the \code{with\_fig()} call it is evaluated
+but never rendered, so \emph{no file is written}. The right-hand panel below is therefore
+still the original placeholder, not a 2026-07-15 regeneration.
+\end{pitfall}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.52\linewidth]{25_rf_importance.png}\hfill
+  \includegraphics[width=0.44\linewidth]{ml_model_comparison.png}
+  \caption{Left: random-forest variable importance — the petal measurements dominate,
+  echoing the PCA loadings of Chapter~3 (regenerated by \code{25\_SupervisedML.R} in the
+  2026-07-15 validation run). Right: cross-validated accuracy of the three tuned models
+  (original placeholder; see pitfall above).}
+  \label{fig:mlimp}
+\end{figure}
+
+\begin{keybox}
+The workflow, not the algorithm, is the lesson: split the data, resample honestly
+(cross-validation), tune on the training folds only, and report on a held-out test set.
+\pkg{caret} (and its successor \pkg{tidymodels}) makes this one consistent interface
+across dozens of models.
+\end{keybox}
+
+% ===========================================================================
+\chapter{Unsupervised Machine Learning: t-SNE and UMAP}
+% ===========================================================================
+PCA is a \emph{linear} projection: it preserves global variance but can leave curved,
+clustered structure tangled. Modern \emph{manifold learners} — t-SNE and UMAP — are
+non-linear and optimise for preserving \emph{local} neighbourhoods, so they pull apart
+clusters that PCA overlaps. They are the unsupervised counterpart to the ordinations of
+Part II, and the standard first look at high-dimensional omics data.
+
+\begin{lstlisting}
+library(Rtsne); library(uwot)
+X  <- t(get_data("leukemia"))         # real file: 60 patients x 1000 genes
+pc <- prcomp(X, scale. = TRUE)$x[, 1:2]
+ts <- Rtsne(X, perplexity = 15)$Y     # t-SNE
+um <- umap(X, n_neighbors = 15)       # UMAP
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+PCA variance explained (PC1-3): 0.324 0.149 0.071
+\end{lstlisting}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{26_embeddings.png}
+  \caption{Three views of the real leukemia expression matrix (1000 genes, 60 patients,
+  5 subtypes). PCA (left) explains $32.4\%$ of variance on PC1; t-SNE (middle) and UMAP
+  (right) reorganise the same samples by local neighbourhood structure. Figure regenerated
+  by \code{26\_UnsupervisedML.R} in the 2026-07-15 validation run.}
+  \label{fig:embed}
+\end{figure}
+
+\begin{pitfall}
+\textbf{Validation finding, 2026-07-15.} \code{26\_UnsupervisedML.R} labels samples with
+\code{sub("\textbackslash{}\textbackslash{}..*\$", "", rownames(X))}, which strips
+everything after the \emph{first period}. That matches simulated column names like
+\code{ALL.03}, but the real \code{leukemiaExpressionSubset.rds} uses underscores
+(\code{ALL\_GSM330151}), so every sample keeps a unique, ungrouped label. The script still
+runs (exit status 0) and the PCA numbers above are genuine, but the printed k-NN
+``label purity'' collapses to $0.000$ for PCA, t-SNE \emph{and} UMAP alike — not because
+the embeddings are bad, but because the purity check is silently comparing every sample
+against labels that no longer group correctly. It is left out of this edition's table
+rather than reported as if it were a real result; see
+\code{VALIDATION\_REPORT\_2026-07-15.md} for the full note.
+\end{pitfall}
+
+\begin{pitfall}
+t-SNE and UMAP distort \emph{global} geometry: distances \emph{between} well-separated
+clusters, and cluster \emph{sizes}, are not meaningful, and the layout depends on
+perplexity / \code{n\_neighbors}. Use them to \emph{see} groups, not to measure how far
+apart groups are — for that, return to PCA or PCoA.
+\end{pitfall}
+
+% ===========================================================================
+\chapter{Neural Networks and Deep Learning}
+% ===========================================================================
+A neural network stacks linear maps and non-linear activations so that, with enough
+hidden units, it can approximate essentially any function. Training adjusts the weights
+by gradient descent to minimise a loss. This chapter integrates the \code{UnitNN} deep-
+learning unit of the ML course.
+
+\section{A network you can run anywhere}
+The self-contained track uses base-\R's \pkg{nnet}: one hidden layer, softmax output,
+weight decay for regularisation. It needs no Python, keras or GPU, so it always runs.
+
+\begin{lstlisting}
+library(nnet)
+Xs  <- scale(as.matrix(iris[,1:4]))
+Y   <- class.ind(iris$Species)              # one-hot targets
+net <- nnet(Xs[idx,], Y[idx,], size = 8, softmax = TRUE, decay = 5e-3, maxit = 400)
+mean(predict(net, Xs[-idx,], type = "class") == iris$Species[-idx])
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+nnet test accuracy: 0.956
+Network architecture: 4 inputs -> 8 hidden (logistic) -> 3 softmax; 67 weights total.
+\end{lstlisting}
+
+\begin{pitfall}
+\textbf{Not updated (figure has no current equivalent) — 2026-07-15 validation.} The
+left-hand training-curve figure below is a Track-B (\pkg{keras}) artifact; \code{keras}
+is not installed in the validation environment, so Track A (\pkg{nnet}) ran instead and
+does not log a per-epoch curve. The panel is left as a conceptual placeholder rather than
+a literal Track-A output.
+\end{pitfall}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.52\linewidth]{nn_training_curve.png}\hfill
+  \includegraphics[width=0.44\linewidth]{21_nn_boundary.png}
+  \caption{Left: training and validation error fall together as the network learns
+  (the validation curve is the one to watch for overfitting; keras template figure). Right:
+  the network's non-linear decision surface on the two petal variables, regenerated by
+  \code{21\_NN\_DL.R} (\pkg{nnet} track) in the 2026-07-15 validation run.}
+  \label{fig:nn}
+\end{figure}
+
+\begin{notebox}
+The chapter's second track is a \pkg{keras}/\pkg{tensorflow} template — a dense classifier
+and a small convolutional network — copied from \code{UnitNN} and guarded by
+\code{requireNamespace()} so the script never breaks when keras is absent. Students with a
+GPU get the full deep-learning workflow (image track included); everyone else still runs
+the \pkg{nnet} version and sees the same concepts.
+\end{notebox}
+
+\begin{pitfall}
+Neural networks are the most eager over-fitters in this book. They demand standardized
+inputs, explicit regularisation (weight decay, dropout), and an honest validation split.
+On the small tabular data typical of ecology, a random forest usually matches or beats a
+neural net with a fraction of the tuning.
+\end{pitfall}
+
+% ===========================================================================
+\chapter{Large Language Models and Embeddings}
+% ===========================================================================
+The course ends where machine learning meets the theme of Chapter~1. A large language
+model (LLM) turns each word, sentence or document into a high-dimensional vector — an
+\emph{embedding} — arranged so that geometric proximity encodes \emph{meaning}. An
+embedding \emph{is} a row of a multivariate data matrix, so every tool in this book
+applies to it unchanged: distances, PCA/UMAP, clustering, classification.
+
+\section{Meaning as geometry}
+For unit-normalised embeddings the natural similarity is the cosine (the dot product).
+Remarkably, \emph{relations} become vector arithmetic: the direction from \code{man} to
+\code{woman} parallels \code{king} to \code{queen}, so
+$\text{king}-\text{man}+\text{woman}\approx\text{queen}$.
+
+\begin{lstlisting}
+E <- <embedding matrix, one unit-row per word>   # from an LLM, or built structurally
+q <- E["king",] - E["man",] + E["woman",]
+sort(E %*% (q / sqrt(sum(q^2))), decreasing = TRUE)[1:3]
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+cos(king, queen)  = 0.46
+cos(king, cell)   = -0.003
+cos(gene, genome) = 1
+
+king - man + woman  ->  nearest words:
+[1] 0.866 0.245 0.236
+\end{lstlisting}
+
+The cosine similarities confirm the embedding geometry is doing what it should: king and
+queen (royalty) are positively related, king and cell (biology) are essentially
+unrelated, and gene/genome (built from the same latent axis) are identical. For the
+analogy itself, \code{sort()} on the one-column matrix \code{E \%*\% q} drops the word
+names before the filter is applied, so \code{27\_LLM\_Embeddings.R}'s own printed output
+is three unlabelled numbers rather than the intended \code{queen / \ldots / \ldots}
+triple — a real, minor script quirk recorded in
+\code{VALIDATION\_REPORT\_2026-07-15.md}. Recomputing the same three cosines by name
+confirms the top match is indeed \emph{queen} ($\cos\approx0.87$), so the analogy still
+resolves correctly; the values above are exactly what the script printed.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.62\linewidth]{27_llm_embeddings.png}
+  \caption{A PCA projection of the structured word embeddings. Semantically related words
+  cluster — royalty/gender, geography, animals, biology — because the embedding places
+  meaning in geometry. Figure regenerated by \code{27\_LLM\_Embeddings.R} in the
+  2026-07-15 validation run.}
+  \label{fig:llm}
+\end{figure}
+
+\begin{keybox}
+Nothing in this chapter is new machinery — it is the \emph{data matrix} of Chapter~1,
+populated by a language model instead of a caliper. Transformers (Vaswani et al., 2017)
+produce the vectors; the multivariate toolbox of this book interprets them. That is the
+throughline of the course: master the geometry of the data matrix, and every method,
+classical or modern, becomes a variation on one theme.
+\end{keybox}
+
+% ###########################################################################
+\part{Applications in Spatial Ecology}
+% ###########################################################################
+
+% ===========================================================================
+\chapter{Ecological Niche Modeling}
+% ===========================================================================
+An ecological niche model (ENM) estimates the environmental conditions where a species
+can occur. Statistically it is a \emph{binomial regression} — the GLM of Chapter~11 —
+whose response is presence/absence (or presence/background) and whose predictors are
+climate variables. The fitted surface, projected onto geography, becomes a suitability
+map. The full classroom pipeline uses spatial rasters (\pkg{terra}, \pkg{dismo},
+WorldClim); here we distil the statistical core so it runs without GIS layers.
+
+\begin{lstlisting}
+occ  <- get_data("hanta")               # Sp (0/1), bio_1, bio_12
+enm2 <- glm(Sp ~ bio_1 + bio_12, data = occ, family = binomial)
+enmq <- glm(Sp ~ poly(bio_1, 2) + bio_12, data = occ, family = binomial)
+AIC(enm2, enmq)                         # does a hump-shaped temperature response help?
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+Best-model coefficients (bio_1 + bio_12):
+(Intercept)       bio_1      bio_12
+   -2.15504     0.13201    -0.00152
+
+Training AUC (bio_1 + bio_12): 0.843     # good discrimination (0.5 = random, 1 = perfect)
+\end{lstlisting}
+
+The positive \code{bio\_1} coefficient means warmer sites are more suitable; the small
+negative \code{bio\_12} term slightly penalises the wettest sites. An AUC of $0.843$ says
+the model ranks a random presence above a random absence about $84\%$ of the time.
+Figure~\ref{fig:enm} shows the two standard ENM outputs: a \emph{response curve} (how
+suitability varies along one predictor) and a \emph{suitability surface} in environmental
+space, with observed detections overlaid.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{22_enm.png}
+  \caption{Ecological niche model. Left: response curve of presence probability against
+  temperature. Right: the fitted suitability surface over the two bioclimatic axes;
+  detections (points) fall in the high-suitability region. Figure regenerated by
+  \code{22\_ENM.R} in the 2026-07-15 validation run (frozen \code{hanta} demo data, as no
+  real-file mapping exists for this data set).}
+  \label{fig:enm}
+\end{figure}
+
+\begin{pitfall}
+Presence-only data has no true absences; the ``0''s are usually \emph{background} points.
+Treating background as genuine absence biases prevalence and inflates apparent
+performance. And AUC computed on the training data (as here, for illustration) is
+optimistic — always report AUC on spatially independent held-out data.
+\end{pitfall}
+
+% ===========================================================================
+\chapter{Presence--Absence Matrices}
+% ===========================================================================
+A presence--absence matrix (PAM) records which species occur at which sites as a binary
+matrix — the discrete cousin of the community tables from Correspondence Analysis. Its
+two marginal sums are the fundamental quantities of biodiversity: row sums are
+\emph{richness} (species per site, $\alpha$) and column sums are \emph{range size}
+(sites per species, $\omega$).
+
+\begin{lstlisting}
+pamdf <- get_data("pam")
+pam   <- as.matrix(pamdf[, -1])         # sites x species (0/1)
+alpha <- rowSums(pam)                    # richness per site
+omega <- colSums(pam)                    # range size per species
+c(fill = mean(pam), mean_alpha = mean(alpha), mean_omega = mean(omega))
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+       fill  mean_alpha  mean_omega
+      0.327       39.27       26.18       # 80 sites x 120 species, 33% filled
+\end{lstlisting}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{24_pam.png}
+  \caption{A presence--absence matrix (left, sites ordered by latitude), the richness
+  gradient it implies ($\alpha$ per site, middle), and the frequency distribution of
+  range sizes ($\omega$ per species, right). Figure regenerated by \code{24\_PAMs.R} in
+  the 2026-07-15 validation run (frozen \code{pam} demo data, as no real-file mapping
+  exists for this data set).}
+  \label{fig:pam}
+\end{figure}
+
+\begin{keybox}
+The matrix product $\mathbf{P}\mathbf{P}^{\!\top}$ counts \emph{shared species} between
+every pair of sites, and $\mathbf{P}^{\!\top}\mathbf{P}$ counts \emph{co-occurrences}
+between every pair of species. From these two products fall out $\beta$-diversity, dispersion
+fields, and range--diversity plots — the whole macroecology of the PAM is linear algebra
+on a binary matrix, closing the loop back to Chapter~1.
+\end{keybox}
+
+% ###########################################################################
+\appendix
+% ###########################################################################
+\chapter{Reproducing this book}
+Everything here is generated from the \code{MS\_LJMR/} package.
+
+\textbf{Layout.}
+\code{R/} holds the revised, portable course scripts (no \code{setwd()}, no \code{x11()};
+data obtained through \code{get\_data()}). \code{verify/} holds the Python reproductions
+that cross-check every method and render the figures. \code{figs/} holds those figures.
+\code{book/} holds this single \code{.tex} file. \code{data/} is where the real course
+data sets go — when present they are used automatically.
+
+\textbf{To rebuild the figures:}
+\begin{lstlisting}
+cd MS_LJMR                   # run from the repo root so R/00_utils.R resolves
+Rscript R/00_utils.R
+for f in R/*.R; do Rscript "$f"; done   # figures land in figs/
+
+## or, for the original Python cross-check:
+cd verify
+python3 make_figures.py      # core chapters + verification log
+python3 extra_figures.py     # dissimilarity, correlation, MDS figures
+\end{lstlisting}
+
+\textbf{To rebuild this book:}
+\begin{lstlisting}
+cd MS_LJMR/book
+pdflatex MS_LJMR_Multivariate.tex   # run 2-3 times for the table of contents
+\end{lstlisting}
+
+\textbf{Verification.} When this edition was first assembled, no \R{} interpreter was
+available, so each method's key quantities were recomputed independently in Python
+(NumPy / SciPy / scikit-learn / statsmodels) and logged to \code{verify/verify\_log.txt};
+the \R{} scripts were written to match. On 2026-07-15 all 19 scripts in \code{R/} were
+actually executed end to end under \R{} 4.1.2, with the real course data files present in
+\code{MS\_LJMR/data/}: 17 scripts ran to completion and reproduced (or, where the real
+data differ from the earlier demo/simulation, superseded) the Python reference values;
+\code{05\_Clustering.R} partially failed (its k-means section runs, its hierarchical
+section does not, for a real-column-naming mismatch); and \code{08\_SVD.R} failed outright
+because the real wing-image file has no header row. The full per-script log, including
+package installs, exact error messages, and a validation finding in the unsupervised-ML
+chapter (Chapter~13), lives in \code{VALIDATION\_REPORT\_2026-07-15.md} at the repository
+root. Representative values confirmed against the real course data: iris PCA variance
+$73.0/22.9/3.7/0.5\%$; $k$-means recovers species with $89.3\%$ agreement; LDA hold-out
+accuracy $1.00$ on the four-group morphometrics; caret 5-fold accuracy $0.93$--$0.95$
+(CART/RF/GBM); the \code{king$-$man$+$woman$\to$queen} analogy resolves correctly.
+
+\chapter{Notes on the revision}
+This edition follows the revised Fall-2026 schedule: Principal Coordinate Analysis is
+folded into the PCA chapter (Chapter~3); the standalone visualization and \pkg{ggplot2}
+sessions are retired (their techniques are used throughout); and four machine-learning
+chapters (9--12) are added, adapted from the author's graduate ML course. Bugs in the
+original scripts were fixed in passing — an undefined \code{d\_euc2} in the dissimilarity
+script, a \code{Qroo3}/\code{QRoo3} name clash in the MDS-biplot script, and pervasive
+hard-coded absolute paths — and every script now runs unmodified on any platform.
+
+\vspace{1em}
+{\small\itshape Selected references.} Gower (1966) \emph{Biometrika}; Legendre \&
+Legendre (2012) \emph{Numerical Ecology}; James, Witten, Hastie \& Tibshirani (2021)
+\emph{ISLR}; Cutler et al.\ (2007) \emph{Ecology}; van der Maaten \& Hinton (2008)
+\emph{JMLR}; McInnes et al.\ (2018) UMAP; Vaswani et al.\ (2017) \emph{NeurIPS};
+Borowiec et al.\ (2022) \emph{Methods Ecol.\ Evol.}
+
+\end{document}

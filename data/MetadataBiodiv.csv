@@ -1,0 +1,10 @@
+Name_of_Variable,Description
+RegionCode,Three letters code for the region of the world
+PapersCapita,Above divided by population size in 2010
+GBIF_OwnToTotal,Ratio of own to total in GBIF
+CountHerbaria,"Number of herbaria in country, as per the Index Herbariorum in 2010"
+log10NmbSpc,Log10 of specimens in herbaria
+InternetPenetration,Number of Internet users per capita 
+GDRE_Mean10Years,Gross domestic expenditure in Research and Development (2000-2010)
+logGDP2010,"Log GDP, 2010"
+logGDP2011,"Log GDP, 2011"
