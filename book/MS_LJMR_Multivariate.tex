@@ -337,19 +337,28 @@ round(err, 3)
 \end{lstlisting}
 
 \begin{lstlisting}[style=rout]
-[1] 0.197 0.087 0.077 0.020     # relative Frobenius error at rank 1, 5, 10, 50
+Relative Frobenius error at ranks 1, 5, 10, 50 :
+[1] 0.342 0.257 0.205 0.079
 \end{lstlisting}
 
+A rank-1 layer — a single outer product $d_1\mathbf{u}_1\mathbf{v}_1^{\!\top}$, which is
+$399+500+1$ numbers standing in for $399\times500$ — already reconstructs the image to
+within $34\%$ error, and rank 50 reaches $8\%$ while storing under a quarter of the
+original values. The error does not fall to zero at any modest rank because a photograph
+is not low-rank: fine texture lives in the long tail of small singular values, which is
+precisely what compression discards.
+
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{svd_compression.png}
-  \caption{SVD compression of a wing image. A rank-1 layer captures the gross shading;
-  by rank 5 the structure is essentially recovered, and the singular-value spectrum
-  (below) explains why.}
+  \includegraphics[width=\linewidth]{08_svd_compression.png}
+  \caption{SVD compression of a \emph{Limenitis archippus} wing image ($399\times500$).
+  The rank-1 layer captures only the gross light/dark banding; the wing outline emerges
+  around rank 10, and by rank 50 the venation is legible while storing under a quarter of
+  the original values. Each panel is annotated with its relative Frobenius error.}
   \label{fig:svdc}
 \end{figure}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.56\linewidth]{svd_scree.png}
+  \includegraphics[width=0.56\linewidth]{08_svd_scree.png}
   \caption{Singular-value spectrum (log scale). The rapid decay means a handful of
   components carry most of the matrix's information — the premise of every dimension-
   reduction method in Part II.}
@@ -841,11 +850,37 @@ a liability when clusters are meant to be compact and an asset when they genuine
 elongated. The dendrogram makes the whole nested sequence visible at once, but the choice of
 where to cut it remains an external decision, exactly as the choice of $k$ does for k-means.
 
+Applied to eight world regions described by four vertebrate richness counts and their four
+area-corrected densities, the Ward tree cut at $k=3$ separates the Asia-Pacific region on
+its own, pairs Latin America with North America, and groups the remaining five:
+
+\begin{lstlisting}[style=rout]
+Ward clusters of world regions (k = 3):
+ APC  CAR EECA  LAM MENA  NAM  SSA  WEU
+   1    2    2    3    2    3    2    2
+\end{lstlisting}
+
+The grouping is driven by the density variables as much as the raw counts, which is the
+point of including both: raw richness tracks how much land a region has, while richness per
+unit area asks a different question, and standardising before clustering puts the two on
+equal footing.
+
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.7\linewidth]{hclust_dendrogram.png}
+  \includegraphics[width=0.7\linewidth]{05_hclust_ward.png}
   \caption{Ward dendrogram of world regions clustered on standardized biodiversity
-  variables. Cutting the tree at a chosen height yields discrete groups.}
+  variables, with the $k=3$ cut boxed. Cutting the tree at a chosen height yields discrete
+  groups; the height of a merge is the cost that merge incurs, so a tall join means two
+  genuinely dissimilar groups were combined.}
   \label{fig:dendro}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.92\linewidth]{05_hclust_linkages.png}
+  \caption{The same distances under four linkage rules. Single linkage chains regions into
+  a staircase; complete and average give more balanced trees; Ward, the minimum-variance
+  criterion, produces the most compact groups. Nothing about the data changed between these
+  four panels — only the definition of ``closest''.}
+  \label{fig:linkages}
 \end{figure}
 
 \begin{pitfall}
@@ -1597,16 +1632,31 @@ AIC(enm2, enmq)                         # does a hump-shaped temperature respons
 \end{lstlisting}
 
 \begin{lstlisting}[style=rout]
-Best-model coefficients (bio_1 + bio_12):
-(Intercept)       bio_1      bio_12
-   -2.15504     0.13201    -0.00152
+Detections: 500 of 5627 sites
 
-Training AUC (bio_1 + bio_12): 0.843     # good discrimination (0.5 = random, 1 = perfect)
+AIC (linear1, linear2, quadratic):
+     df      AIC
+enm1  2 2509.565
+enm2  3 2334.003
+enmq  4 2257.712
+
+Coefficients (bio_1 + bio_12):
+(Intercept)       bio_1      bio_12
+   -5.05879     0.39026    -0.00242
+
+Training AUC (bio_1 + bio_12): 0.901     # good discrimination (0.5 = random, 1 = perfect)
 \end{lstlisting}
 
-The positive \code{bio\_1} coefficient means warmer sites are more suitable; the small
-negative \code{bio\_12} term slightly penalises the wettest sites. An AUC of $0.843$ says
-the model ranks a random presence above a random absence about $84\%$ of the time.
+Read the AIC column first, because it settles a modelling question rather than merely
+ranking three fits. Adding precipitation to a temperature-only model buys $176$ AIC units,
+and adding a \emph{quadratic} temperature term buys a further $76$ — so the response to
+temperature is not monotone but hump-shaped, which is what a niche ought to look like:
+suitability rises to an optimum and falls away on both sides. The additive model's
+coefficients are shown above for interpretability, and they tell a coarser version of the
+same story — positive \code{bio\_1}, so warmer sites are more suitable over the observed
+range, with a small negative \code{bio\_12} penalising the wettest ones. An AUC of $0.901$
+says the model ranks a random presence above a random absence about $90\%$ of the time.
+
 Figure~\ref{fig:enm} shows the two standard ENM outputs: a \emph{response curve} (how
 suitability varies along one predictor) and a \emph{suitability surface} in environmental
 space, with observed detections overlaid.

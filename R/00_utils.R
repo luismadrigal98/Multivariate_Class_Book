@@ -102,8 +102,16 @@ get_data <- function(name, seed = 1998, quiet = FALSE) {
     countries_live = "CountriesToLive.csv",
     leukemia       = "leukemiaExpressionSubset.rds",
     limenitis      = "Limenitis_archippus.csv",
-    neotoma        = "NeotomaMorphoEnvir.csv"
+    neotoma        = "NeotomaMorphoEnvir.csv",
+    hanta          = "hanta_virtual.csv"
   )
+
+  ## Datasets whose real file is a headerless numeric grid: no header row and no
+  ## row names, every line pure data. read.csv()'s default header = TRUE would
+  ## silently promote the first row of pixels to column names and hand back a
+  ## data frame, which then fails in anything requiring a true matrix (norm(),
+  ## svd() on a subset, image()). Read these with header = FALSE and coerce.
+  matrix_files <- c("limenitis")
   ## 1) built-ins
   if (name == "iris")   { utils::data("iris",   envir = environment()); return(iris) }
   if (name == "mtcars") { utils::data("mtcars", envir = environment()); return(mtcars) }
@@ -115,6 +123,8 @@ get_data <- function(name, seed = 1998, quiet = FALSE) {
     if (file.exists(path)) {
       if (!quiet) message("get_data('", name, "'): using real file ", path)
       if (grepl("\\.rds$", f)) return(readRDS(path))
+      if (name %in% matrix_files)
+        return(as.matrix(utils::read.csv(path, header = FALSE)))
       return(utils::read.csv(path, stringsAsFactors = TRUE))
     }
   }
@@ -175,6 +185,20 @@ get_data <- function(name, seed = 1998, quiet = FALSE) {
 }
 
 ## ---- fallback generators (structure-faithful, seeded) ----------------------
+##
+##  A fallback is only useful if a script written against it also runs against
+##  the real file, so each generator should emit the REAL file's column names.
+##  Verified aligned: taxon, crawley, biodiv, hanta, limenitis, leukemia.
+##  Known still divergent (no current script uses them, so they are documented
+##  rather than changed blind -- align before writing a session that needs one):
+##    butterflies    real: Genus, Sp, Name, Pattern, HD..PF
+##                   sim : Superfamily, Genus, Species, Pattern, HD..PF
+##    europe         real: City, Long, Lat          sim: City, lon, lat
+##    countries_live real: Country, living, climate, food, security,
+##                         hospitality, infrastructure
+##                   sim : Country, Cost, Health, Safety, Climate, Freedom
+##    neotoma        real: ID, sp, long, lat, No. cat, Code, d1..d8, ...
+##                   sim : sp, lon, lat, m1..m80, bio1..bio19
 
 ## Quintana Roo butterflies: species x (meta + 7 successional sites)
 .sim_butterflies <- function() {
@@ -194,23 +218,39 @@ get_data <- function(name, seed = 1998, quiet = FALSE) {
              Species = species, Pattern = pat, M, stringsAsFactors = TRUE)
 }
 
-## Biodiversity of countries: RegionCode + richness/diversity/governance/capacity
+## Biodiversity of countries: RegionCode + richness / area-corrected richness
+## (density) / governance / capacity.
+##
+## Column names and RegionCode levels mirror the real BiodivCountries.csv so
+## that a script written against the simulation runs unchanged on the real file.
+## The real table has no per-taxon "diversity index"; what it carries alongside
+## raw richness is Dens*Rich, richness per unit area. Earlier versions of this
+## generator invented tidier *Div names that exist in no real file, which is
+## exactly the mismatch that used to break 05_Clustering.R.
 .sim_biodiv <- function() {
-  regions <- c("NAM","LAM","SSA","EU","APAC","EECA","MENA")
-  n <- 160
+  regions <- c("APC","CAR","EECA","LAM","MENA","NAM","SSA","WEU")
+  n <- 186
   reg <- sample(regions, n, replace = TRUE)
   base <- match(reg, regions)
   rich <- function(mult) round(abs(rnorm(n, 50 * mult + 8 * base, 25)))
+  dens <- function(mult) round(abs(rnorm(n, 5 * mult + 0.8 * base, 3)), 3)
   gov  <- function() round(rnorm(n, 0, 1), 2)
-  data.frame(
+  out <- data.frame(
     Country    = paste0("C", sprintf("%03d", seq_len(n))),
     RegionCode = factor(reg),
-    Amphibians = rich(1.0), Reptiles = rich(1.2), Birds = rich(3.0), Mammals = rich(1.5),
-    AmphDiv = rich(.4), ReptDiv = rich(.5), BirdDiv = rich(1.1), MamDiv = rich(.6),
+    AmphRich = rich(1.0), Rept_rich = rich(1.2),
+    BirdRich = rich(3.0), MamsRich  = rich(1.5),
+    DensAmphRich = dens(1.0), DensRept_rich = dens(1.2),
+    DensBirdRich = dens(3.0), DensMamsRich  = dens(1.5),
     VoiceAccount = gov(), Stability = gov(), GovEffect = gov(), RuleLaw = gov(),
     Wealth = round(rlnorm(n, 9, 1)),
     Capacity = round(rnorm(n, 50 + 5 * base, 15)),
     stringsAsFactors = TRUE)
+  ## the real file is not complete; imitate that so NA handling gets exercised
+  for (j in c("AmphRich","Rept_rich","BirdRich","MamsRich",
+              "DensAmphRich","DensRept_rich","DensBirdRich","DensMamsRich"))
+    out[sample(n, 3), j] <- NA
+  out
 }
 
 ## Crawley "taxon": 4 taxa x 30, seven morphometric variables (Gaussian blobs)

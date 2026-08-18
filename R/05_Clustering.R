@@ -53,9 +53,15 @@ with_fig("05_kmeans_pairs", {
 ## ---- HIERARCHICAL CLUSTERING ===============================================
 ## Aggregate the biodiversity table by region, standardize, cluster.
 biodiv <- get_data("biodiv")
-num    <- biodiv[, c("Amphibians","Reptiles","Birds","Mammals",
-                     "AmphDiv","ReptDiv","BirdDiv","MamDiv")]
-agg    <- aggregate(num, by = list(Region = biodiv$RegionCode), FUN = mean)
+## Four richness counts and their four area-corrected (density) counterparts.
+## These are the real BiodivCountries.csv column names; the seeded fallback in
+## 00_utils.R emits the same ones, so this line works either way.
+num    <- biodiv[, c("AmphRich","Rept_rich","BirdRich","MamsRich",
+                     "DensAmphRich","DensRept_rich","DensBirdRich","DensMamsRich")]
+## The real table is incomplete (3-15 missing values per column), and a single
+## NA would propagate through mean() -> scale() -> dist() and abort hclust().
+agg    <- aggregate(num, by = list(Region = biodiv$RegionCode),
+                    FUN = function(x) mean(x, na.rm = TRUE))
 M      <- scale(as.matrix(agg[, -1]))
 rownames(M) <- agg$Region
 Dreg   <- dist(M)                               # Euclidean on standardized means

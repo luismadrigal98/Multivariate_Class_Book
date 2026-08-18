@@ -56,15 +56,27 @@ moment you add the real files — no path editing, ever.
 - **Genuine data, identical to class:** the real course files now sit in `data/` and are
   picked up automatically; `iris` and `mtcars` come from R itself, and `doubs` loads the
   real `ade4::doubs` on any machine with `ade4` installed.
-- **Frozen demos still in use:** `hanta` and `pam`, which have no real-file mapping in
-  `get_data()`'s lookup table.
+- **Frozen demo still in use:** `pam` only — no real file of that name exists.
 
-Two loader caveats are worth knowing. `Limenitis_archippus.csv` is a headerless numeric
-grid, but the generic real-file branch reads every mapped file with
-`read.csv(..., stringsAsFactors = TRUE)` — i.e. assuming a header — so it arrives as a
-data frame rather than a matrix. And `BiodivCountries.csv` uses different richness-column
-names (`AmphRich`, `Rept_rich`, …) from the ones the simulated fallback invented, and has
-no `*Div` columns at all.
+All 19 scripts run against the real data. Three loader issues were fixed to get there:
+
+- `Limenitis_archippus.csv` is a **headerless** 399 × 500 grid, so the generic
+  `read.csv(..., header = TRUE)` branch was eating its first row as column names and
+  returning a data frame. `get_data()` now keeps a `matrix_files` set read with
+  `header = FALSE` and coerced with `as.matrix()`.
+- `BiodivCountries.csv` shares no column names with what `.sim_biodiv()` used to invent.
+  The **simulation was aligned to the real file** (`AmphRich`, `Rept_rich`, `BirdRich`,
+  `MamsRich` plus the four `Dens*Rich` densities, and the real region codes), on the
+  principle that the fallback should imitate reality rather than the reverse. The real
+  table is incomplete, so `05_Clustering.R` aggregates with `na.rm = TRUE`, and the
+  generator plants NAs so the simulated path exercises the same handling.
+- `hanta` was never mapped to a real file even though `hanta_virtual.csv` carries exactly
+  the `Sp, bio_1, bio_12` columns `22_ENM.R` expects. Now mapped: 5627 sites instead of a
+  400-row demo.
+
+Four fallback generators (`butterflies`, `europe`, `countries_live`, `neotoma`) still
+differ from their real files. No current script uses them; the mismatches are documented
+in a comment block in `R/00_utils.R` rather than fixed blind.
 
 ## Environment
 
