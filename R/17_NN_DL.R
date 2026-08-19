@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 21_NN_DL.R — Neural Networks & Deep Learning
+##  MS_LJMR :: 17_NN_DL.R — Neural Networks & Deep Learning
 ##
 ##  Author: Luis J. Madrigal-Roca  (adapted from his ML course, UnitNN)
 ##
@@ -68,7 +68,7 @@ gx <- seq(min(petal[,1]), max(petal[,1]), length = 200)
 gy <- seq(min(petal[,2]), max(petal[,2]), length = 200)
 grid <- expand.grid(PetalLength = gx, PetalWidth = gy)
 zz   <- max.col(predict(net2, as.matrix(grid)))
-with_fig("21_nn_boundary", {
+with_fig("17_nn_boundary", {
   image(gx, gy, matrix(zz, 200, 200),
         col = c("#dbe2f0", "#f0dbe0", "#dbeeee"),
         xlab = "Petal length (z)", ylab = "Petal width (z)",
@@ -106,4 +106,4 @@ if (requireNamespace("keras", quietly = TRUE)) {
           "See UnitNN in the ML course for the full GPU workflow.")
 }
 
-cat("\n[21_NN_DL] done.\n")
+cat("\n[17_NN_DL] done.\n")

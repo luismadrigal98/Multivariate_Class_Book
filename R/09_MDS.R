@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 15_MDS.R — (non-metric) Multidimensional Scaling
+##  MS_LJMR :: 09_MDS.R — (non-metric) Multidimensional Scaling
 ##
 ##  Original authors: Marlon E. Cobos & Jorge Soberón
 ##                    (BIOL 943 Multivariate Methods, University of Kansas)
@@ -41,7 +41,7 @@ md <- vegan::metaMDS(cars, distance = "euclidean", k = 2, trace = FALSE,
 cat("nMDS stress:", round(md$stress, 4),
     "  (<0.05 excellent, <0.1 good, <0.2 usable)\n")
 
-with_fig("15_mds", width = 10, height = 4.4, {
+with_fig("09_mds", width = 10, height = 4.4, {
   op <- par(mfrow = c(1, 2)); on.exit(par(op))
   plot(md$points, pch = 19, col = "#1f3b73", main = "nMDS configuration",
        xlab = "dim 1", ylab = "dim 2")
@@ -58,5 +58,5 @@ pr <- vegan::protest(mdE, mdG, permutations = 999)
 cat("\nProcrustes correlation (Euclidean vs Gower):", round(pr$t0, 3),
     "  p =", pr$signif, "\n")
 
-cat("\n[15_MDS] stress is an optimisation score, not a probability; a tight,",
+cat("\n[09_MDS] stress is an optimisation score, not a probability; a tight,",
     "monotone Shepard diagram means the low-D map is faithful.\n")

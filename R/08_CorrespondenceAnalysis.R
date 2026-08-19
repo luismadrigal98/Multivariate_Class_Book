@@ -1,11 +1,11 @@
 ## ============================================================================
-##  MS_LJMR :: 08_SVD.R — Singular Value Decomposition & low-rank approximation
+##  MS_LJMR :: 08_CorrespondenceAnalysis.R — Correspondence Analysis (CA)
 ##
 ##  Original authors: Laura Jiménez & Jorge Soberón
 ##                    (BIOL 943 Multivariate Methods, University of Kansas)
 ##  Revised for the MS_LJMR edition by: Luis J. Madrigal-Roca
 ##
-##  Revised from 08_SingularValueDecomposition.R. Uses frozen limenitis image.
+##  Revised from 14_CorrespondaceAnalysis.R. Uses frozen Doubs fish counts.
 ## ============================================================================
 ## ---------------------------------------------------------------------------
 ##  STANDALONE USE (no repository needed)
@@ -19,7 +19,7 @@
 ##  the other. To save them as files instead, replace its body with
 ##      png(paste0(name, ".png")); on.exit(dev.off()); force(expr)
 ##
-##  Files to keep next to this script: Limenitis_archippus.csv
+##  Files to keep next to this script: none — doubs comes from the ade4 package (install.packages("ade4"))
 ##
 # need <- function(...) invisible(lapply(c(...), function(p) {
 #   if (!requireNamespace(p, quietly = TRUE))
@@ -27,37 +27,35 @@
 #   suppressPackageStartupMessages(library(p, character.only = TRUE))
 # }))
 # with_fig <- function(name, expr, ...) invisible(force(expr))   # draw on screen
-# get_data <- function(name) as.matrix(read.csv("Limenitis_archippus.csv", header = FALSE))
+# get_data <- function(name) { utils::data("doubs", package = "ade4")
+#                  list(fish = doubs$fish, env = doubs$env) }
 ## ---------------------------------------------------------------------------
 if (!exists("get_data")) source(file.path("R", "00_utils.R"))
+need("vegan")
 
-G <- get_data("limenitis")               # 69 x 100 grayscale intensity matrix
-s <- svd(G)                              # G = U D V'
-d <- s$d
+doubs <- get_data("doubs")
+fish  <- doubs$fish
+## drop any empty rows/cols (CA cannot handle them)
+fish  <- fish[rowSums(fish) > 0, colSums(fish) > 0]
 
-## rank-k reconstruction and its relative error
-approx <- function(k) s$u[, 1:k] %*% diag(d[1:k], k, k) %*% t(s$v[, 1:k])
-relerr <- function(k) norm(G - approx(k), "F") / norm(G, "F")
-ks  <- c(1, 5, 10, 50)
-err <- sapply(ks, relerr)
-cat("Relative Frobenius error at ranks", paste(ks, collapse = ", "), ":\n")
-print(round(err, 3))
+## ---- CA in vegan -----------------------------------------------------------
+ca <- vegan::cca(fish)
+ev <- ca$CA$eig
+cat("Inertia (eigenvalues) and proportion per axis:\n")
+print(round(rbind(inertia = ev[1:4], prop = (ev / sum(ev))[1:4]), 4))
 
-with_fig("08_svd_compression", width = 12, height = 3, {
-  op <- par(mfrow = c(1, 5), mar = c(1,1,2,1)); on.exit(par(op))
-  image(t(G[nrow(G):1, ]), col = gray(0:50/50), axes = FALSE, main = "Original")
-  for (k in ks) {
-    Gk <- approx(k)
-    image(t(Gk[nrow(Gk):1, ]), col = gray(0:50/50), axes = FALSE,
-          main = sprintf("rank %d (err %.3f)", k, relerr(k)))
-  }
+## ---- biplot (scaling 1: distances among sites preserved) -------------------
+with_fig("08_ca_biplot", {
+  plot(ca, scaling = 1, main = "Correspondence analysis (scaling 1: sites)")
 })
 
-with_fig("08_svd_scree", {
-  plot(d[1:15], type = "b", pch = 19, col = "#1f3b73", log = "y",
-       xlab = "Index", ylab = "Singular value (log)",
-       main = "Singular-value spectrum")
+## ---- detrending removes the arch (horseshoe) effect ------------------------
+dca <- vegan::decorana(fish)
+with_fig("08_ca_vs_dca", {
+  op <- par(mfrow = c(1, 2)); on.exit(par(op))
+  plot(ca,  main = "CA (arch effect)")
+  plot(dca, main = "Detrended CA")
 })
 
-cat("\n[08_SVD] the first few singular triplets carry most of the matrix;",
-    "truncating them is the best rank-k approximation (Eckart-Young).\n")
+cat("\n[08_CorrespondenceAnalysis] CA = SVD of a chi-square-standardized table;",
+    "ordinates sites and species together. Watch for the arch on long gradients.\n")

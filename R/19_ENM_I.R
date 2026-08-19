@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 22_ENM_I.R — Ecological Niche Modeling I: fitting the model
+##  MS_LJMR :: 19_ENM_I.R — Ecological Niche Modeling I: fitting the model
 ##
 ##  Original authors: Marlon E. Cobos, Laura Jiménez & Jorge Soberón
 ##                    (BIOL 943 Multivariate Methods, University of Kansas)
@@ -8,7 +8,7 @@
 ##  Revised from 21_ENMI.R. The heavy spatial pipeline (terra, dismo, worldclim
 ##  downloads) is replaced by a self-contained binomial ENM on the real 'hanta'
 ##  occurrence table with two bioclim predictors, so the core idea runs without
-##  GIS rasters or network access. Session II (23_ENM_II.R) takes the model
+##  GIS rasters or network access. Session II (20_ENM_II.R) takes the model
 ##  fitted here and asks whether it is any good.
 ##
 ##  The idea
@@ -53,7 +53,7 @@ cat("Detections:", sum(occ$Sp), "of", nrow(occ), "sites",
 ## Before fitting anything: do the presences occupy a restricted region of the
 ## two-variable environmental space? If they scatter like the background, no
 ## model will help.
-with_fig("22_enm_espace", {
+with_fig("19_enm_espace", {
   plot(occ$bio_1, occ$bio_12, pch = 19, cex = .35, col = "grey75",
        xlab = "bio_1 (mean annual temperature)",
        ylab = "bio_12 (annual precipitation)",
@@ -91,7 +91,7 @@ print(anova(enm2, enmq, test = "Chisq"))
 ## ---- 3. Response curves ----------------------------------------------------
 ## A response curve varies ONE predictor with the others held at their median.
 ## It is a slice through the surface, not the surface.
-with_fig("22_enm_response", {
+with_fig("19_enm_response", {
   op <- par(mfrow = c(1, 2), mar = c(4.5, 4.5, 3, 1))
   b1   <- seq(min(occ$bio_1), max(occ$bio_1), length = 200)
   mods <- list("additive" = enm2, "quadratic in bio_1" = enmq)
@@ -116,7 +116,7 @@ grid_pred <- function(mod, n = 120) {
 }
 g <- grid_pred(enmq)
 
-with_fig("22_enm_surface", {
+with_fig("19_enm_surface", {
   image(g$x, g$y, g$z, col = hcl.colors(24, "YlGnBu", rev = TRUE),
         xlab = "bio_1 (temperature)", ylab = "bio_12 (precipitation)",
         main = "Modelled suitability over environmental space")
@@ -125,7 +125,7 @@ with_fig("22_enm_surface", {
          pch = 19, cex = .4, col = "#8c2d3a")
 })
 
-## Carry the fitted objects forward: 23_ENM_II.R re-fits from scratch so it can
+## Carry the fitted objects forward: 20_ENM_II.R re-fits from scratch so it can
 ## be run standalone, but the model formulas are the ones chosen here.
-cat("\n[22_ENM_I] a niche model is a binomial response surface over",
+cat("\n[19_ENM_I] a niche model is a binomial response surface over",
     "environmental predictors. Session II asks whether it generalizes.\n")

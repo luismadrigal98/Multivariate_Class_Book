@@ -9,7 +9,7 @@
 ##  Revised from 03_VisualizationII.R ("Session 5: Visualization, Part 2").
 ##  The original set a working directory, read BiodivCountries.csv by hard-coded
 ##  COLUMN NUMBERS (3, 28:31, 34:36) and called x11(). Here the biodiversity
-##  columns are selected by NAME — the same names 05_Clustering.R uses, which
+##  columns are selected by NAME — the same names 04_Clustering.R uses, which
 ##  the seeded fallback in 00_utils.R also emits — so the script survives any
 ##  reordering of the real file.
 ##
@@ -87,7 +87,7 @@ if (has3d) {
 ## ---- 2. Aggregating a real table before plotting it ------------------------
 ## 186 countries is too many points to label. Aggregating to world regions
 ## turns an unreadable cloud into eight labelled points — the same move
-## 05_Clustering.R makes before hierarchical clustering, and the same columns.
+## 04_Clustering.R makes before hierarchical clustering, and the same columns.
 biodiv <- get_data("biodiv")
 rich   <- c("AmphRich", "Rept_rich", "BirdRich", "MamsRich")
 dens   <- c("DensAmphRich", "DensRept_rich", "DensBirdRich", "DensMamsRich")

@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 24_PAMs.R — Presence-Absence Matrices (biodiversity structure)
+##  MS_LJMR :: 21_PAMs.R — Presence-Absence Matrices (biodiversity structure)
 ##
 ##  Original author: Jorge Soberón
 ##                   (BIOL 943 Multivariate Methods, University of Kansas)
@@ -43,7 +43,7 @@ cat("PAM:", nrow(pam), "sites x", ncol(pam), "species;",
 cat("mean alpha (richness/site) =", round(mean(alpha), 2),
     "   mean omega (range/species) =", round(mean(omega), 2), "\n")
 
-with_fig("24_pam", width = 13, height = 3.8, {
+with_fig("21_pam", width = 13, height = 3.8, {
   op <- par(mfrow = c(1, 3)); on.exit(par(op))
   image(t(pam[order(lat), ]), col = c("white", "#1f3b73"),
         main = "PAM (sites x species)", axes = FALSE)
@@ -57,12 +57,12 @@ with_fig("24_pam", width = 13, height = 3.8, {
 ## fill-corrected richness vs. mean co-occurrence (Soberon's "range-diversity")
 betty  <- 1 / mean(alpha / ncol(pam))
 disp   <- (pam %*% omega) / (alpha * nrow(pam))
-with_fig("24_range_diversity", {
+with_fig("21_range_diversity", {
   plot(disp, alpha / ncol(pam), pch = 19, col = "#8c2d3a55",
        xlab = "dispersion field (mean range of co-occurring species)",
        ylab = "proportional richness",
        main = "Range-diversity plot")
 })
 
-cat("\n[24_PAMs] a PAM's row/column sums (alpha, omega) drive richness and",
+cat("\n[21_PAMs] a PAM's row/column sums (alpha, omega) drive richness and",
     "range-size patterns; range-diversity plots relate the two.\n")

@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 18_DiscriminantAnalysis.R — Linear & Quadratic Discriminant
+##  MS_LJMR :: 12_DiscriminantAnalysis.R — Linear & Quadratic Discriminant
 ##
 ##  Original authors: Marlon E. Cobos & Jorge Soberón
 ##                    (BIOL 943 Multivariate Methods, University of Kansas)
@@ -56,12 +56,12 @@ cat("\nConfusion matrix (held-out test):\n")
 print(table(true = test$Taxon, predicted = pred))
 cat("Hold-out accuracy:", round(mean(pred == test$Taxon), 3), "\n")
 
-with_fig("18_lda", { plot(model, col = as.integer(train$Taxon)) })
+with_fig("12_lda", { plot(model, col = as.integer(train$Taxon)) })
 
 ## ---- QDA (unequal covariances) ---------------------------------------------
 modelQ <- MASS::qda(Taxon ~ ., data = train)
 predQ  <- predict(modelQ, test)$class
 cat("\nQDA hold-out accuracy:", round(mean(predQ == test$Taxon), 3), "\n")
 
-cat("\n[18_DiscriminantAnalysis] LDA maximises between/within variance under",
+cat("\n[12_DiscriminantAnalysis] LDA maximises between/within variance under",
     "equal-covariance; test that assumption, else use QDA.\n")

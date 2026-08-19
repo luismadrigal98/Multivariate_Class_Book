@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 20_CanonicalCorrelation.R — Canonical Correlation & Redundancy
+##  MS_LJMR :: 14_CanonicalCorrelation.R — Canonical Correlation & Redundancy
 ##
 ##  Original authors: Marlon E. Cobos, Laura Jiménez & Jorge Soberón
 ##                    (BIOL 943 Multivariate Methods, University of Kansas)
@@ -58,8 +58,8 @@ cat("Adjusted R^2:", round(vegan::RsquareAdj(rda)$adj.r.squared, 3), "\n")
 cat("Global test (anova.cca) p =",
     anova.cca(rda, permutations = 199)$`Pr(>F)`[1], "\n")
 
-with_fig("20_rda", { ordiplot(rda, scaling = 2, type = "text",
+with_fig("14_rda", { ordiplot(rda, scaling = 2, type = "text",
                               main = "RDA: fish constrained by environment") })
 
-cat("\n[20_CanonicalCorrelation] canonical correlation is symmetric (two-way",
+cat("\n[14_CanonicalCorrelation] canonical correlation is symmetric (two-way",
     "association); RDA is directional (Y ~ X), the multivariate regression.\n")

@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 23_ENM_II.R — Ecological Niche Modeling II: evaluation & transfer
+##  MS_LJMR :: 20_ENM_II.R — Ecological Niche Modeling II: evaluation & transfer
 ##
 ##  Original authors: Marlon E. Cobos, Laura Jiménez & Jorge Soberón
 ##                    (BIOL 943 Multivariate Methods, University of Kansas)
@@ -106,7 +106,7 @@ print(round(cbind(threshold = thr, tab), 3))
 ## records — usually the ones most likely to be identification or georeference
 ## errors — and shrinks the predicted area sharply.
 
-with_fig("23_enm_thresholds", {
+with_fig("20_enm_thresholds", {
   op <- par(mfrow = c(1, 2), mar = c(4.5, 4.5, 3, 1))
   ## ROC curve
   ord <- order(-p)
@@ -148,7 +148,7 @@ novel    <- !(in_range(future$bio_1, occ$bio_1) & in_range(future$bio_12, occ$bi
 cat("Projection points in novel environments:",
     round(100 * mean(novel), 1), "%\n")
 
-with_fig("23_enm_transfer", {
+with_fig("20_enm_transfer", {
   plot(occ$bio_1, p_now, pch = 19, cex = .3, col = "grey70",
        xlab = "bio_1 (temperature)", ylab = "predicted suitability",
        main = "Current vs. +3 C, novel environments flagged")
@@ -161,6 +161,6 @@ with_fig("23_enm_transfer", {
          bty = "n", cex = .75)
 })
 
-cat("\n[23_ENM_II] cross-validate before believing an AUC; state the threshold",
+cat("\n[20_ENM_II] cross-validate before believing an AUC; state the threshold",
     "rule you used; and never report a projection without saying how much of",
     "it is extrapolation.\n")

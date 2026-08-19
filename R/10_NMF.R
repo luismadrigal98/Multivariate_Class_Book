@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 17_NMF.R — Non-negative Matrix Factorization
+##  MS_LJMR :: 10_NMF.R — Non-negative Matrix Factorization
 ##
 ##  Original author: Jorge Soberón
 ##                   (BIOL 943 Multivariate Methods, University of Kansas)
@@ -45,7 +45,7 @@ cat("NMF rank 3:  W", dim(W)[1], "x", dim(W)[2],
     "  H", dim(H)[1], "x", dim(H)[2],
     "  residual", round(sqrt(sum((A - W %*% H)^2)), 1), "\n")
 
-with_fig("17_nmf", width = 10, height = 4, {
+with_fig("10_nmf", width = 10, height = 4, {
   op <- par(mfrow = c(1, 2)); on.exit(par(op))
   image(t(W[order(max.col(W)), ]), col = hcl.colors(30, "Inferno"),
         main = "Basis W (gene signatures)", axes = FALSE)
@@ -58,5 +58,5 @@ assign3 <- max.col(t(H))
 cat("\nFactor vs subtype (columns = dominant NMF factor):\n")
 print(table(subtype = type, factor = assign3))
 
-cat("\n[17_NMF] non-negativity makes the factors additive 'parts' (metagenes)",
+cat("\n[10_NMF] non-negativity makes the factors additive 'parts' (metagenes)",
     "that recover subtype structure without labels.\n")

@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 07_LinearAlgebra.R — transformations, eigenvectors, ellipses
+##  MS_LJMR :: 05_LinearAlgebra.R — transformations, eigenvectors, ellipses
 ##
 ##  Original authors: Jorge Soberón & Laura Jiménez
 ##                    (BIOL 943 Multivariate Methods, University of Kansas)
@@ -45,7 +45,7 @@ U_stretch <- matrix(c(2, 0, 0, 1.2), 2)            # stretch
 rot <- function(a) matrix(c(cos(a), sin(a), -sin(a), cos(a)), 2)  # rotate
 U_rot <- rot(pi/4)
 
-with_fig("07_transformations", {
+with_fig("05_transformations", {
   op <- par(mfrow = c(1, 2)); on.exit(par(op))
   trans(X, U_stretch %*% X, "Stretch")
   trans(X, U_rot %*% X,     "Rotate (45 deg)")
@@ -59,7 +59,7 @@ eg    <- eigen(S)                                  # eigenvectors = axes
 cat("Eigenvalues (variances along principal axes):\n"); print(round(eg$values, 3))
 len   <- 2 * sqrt(eg$values)                        # axis half-lengths (2 sd)
 
-with_fig("07_ellipse_axes", {
+with_fig("05_ellipse_axes", {
   plot(cloud, pch = ".", col = "#c8a23a", asp = 1,
        main = "Eigenvectors are the axes of dispersion")
   arrows(0, 0, eg$vectors[1,] * len, eg$vectors[2,] * len,
@@ -67,5 +67,5 @@ with_fig("07_ellipse_axes", {
   lines(ellipse::ellipse(S, centre = colMeans(cloud), level = .95), lwd = 2)
 })
 
-cat("\n[07_LinearAlgebra] eigenvectors of the covariance matrix are the",
+cat("\n[05_LinearAlgebra] eigenvectors of the covariance matrix are the",
     "principal axes; eigenvalues are the variances along them (this IS PCA).\n")

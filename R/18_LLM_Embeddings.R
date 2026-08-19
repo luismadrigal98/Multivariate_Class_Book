@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 27_LLM_Embeddings.R — Large Language Models & Embeddings
+##  MS_LJMR :: 18_LLM_Embeddings.R — Large Language Models & Embeddings
 ##
 ##  Author: Luis J. Madrigal-Roca  (new session for the MS_LJMR edition)
 ##
@@ -75,7 +75,7 @@ grp <- c(king="royal",queen="royal",man="royal",woman="royal",
          dog="animal",cat="animal",paris="geo",france="geo",rome="geo",
          italy="geo",gene="bio",genome="bio",protein="bio",cell="bio")
 pal <- c(royal="#1f3b73", geo="#8c2d3a", animal="#c8a23a", bio="#2a7f7f")
-with_fig("27_llm_embeddings", {
+with_fig("18_llm_embeddings", {
   plot(pc$x[,1:2], pch = 19, col = pal[grp[rownames(E)]], cex = 1.4,
        xlab = "PC1", ylab = "PC2", main = "Word embeddings — PCA projection")
   text(pc$x[,1], pc$x[,2], rownames(E), pos = 3, cex = 0.75)
@@ -87,5 +87,5 @@ Dcos <- as.dist(1 - E %*% t(E))
 cat("\nHierarchical clusters of words (cosine distance):\n")
 print(cutree(hclust(Dcos, "average"), k = 4))
 
-cat("\n[27_LLM_Embeddings] done. Embeddings = multivariate vectors; reuse the",
+cat("\n[18_LLM_Embeddings] done. Embeddings = multivariate vectors; reuse the",
     "whole toolbox.\n")

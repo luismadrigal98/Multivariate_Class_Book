@@ -501,7 +501,7 @@ is not low-rank: fine texture lives in the long tail of small singular values, w
 precisely what compression discards.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{08_svd_compression.png}
+  \includegraphics[width=\linewidth]{06_svd_compression.png}
   \caption{SVD compression of a \emph{Limenitis archippus} wing image ($399\times500$).
   The rank-1 layer captures only the gross light/dark banding; the wing outline emerges
   around rank 10, and by rank 50 the venation is legible while storing under a quarter of
@@ -510,7 +510,7 @@ precisely what compression discards.
 \end{figure}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.56\linewidth]{08_svd_scree.png}
+  \includegraphics[width=0.56\linewidth]{06_svd_scree.png}
   \caption{Singular-value spectrum (log scale). The rapid decay means a handful of
   components carry most of the matrix's information — the premise of every dimension-
   reduction method in Part II.}
@@ -590,7 +590,7 @@ before the ``elbow.'' The \emph{Kaiser rule} keeps components with eigenvalue $>
 (more variance than a single standardized variable). For iris both rules agree on two.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.56\linewidth]{09_pca_scree.png}
+  \includegraphics[width=0.56\linewidth]{07_pca_scree.png}
   \caption{Iris PCA scree plot. Only the first two components exceed the Kaiser
   threshold (dashed line at eigenvalue $=1$).}
   \label{fig:pcascree}
@@ -602,7 +602,7 @@ objects in PC space; arrows are variables, their direction showing which compone
 drive and their projection onto an axis showing their contribution.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.66\linewidth]{09_pca_biplot.png}
+  \includegraphics[width=0.66\linewidth]{07_pca_biplot.png}
   \caption{Iris PCA biplot. PC1 separates \emph{setosa} (left) from the others and is
   driven by the three positively-correlated size variables; sepal width points downward,
   loading on PC2.}
@@ -620,7 +620,7 @@ cor(pcoa$points[,1], prcomp(iris[,1:4], scale.=TRUE)$x[,1])   # ~ 1.000
 \end{lstlisting}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.56\linewidth]{09_pcoa_vs_pca.png}
+  \includegraphics[width=0.56\linewidth]{07_pcoa_vs_pca.png}
   \caption{PCoA on a Euclidean distance reproduces the PCA ordination point for point.
   For non-Euclidean distances PCoA generalises PCA to data types PCA cannot handle.}
   \label{fig:pcoa}
@@ -693,7 +693,7 @@ course of the river — and it is what makes the two-dimensional biplot an hones
 rather than a convenient slice.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.62\linewidth]{14_ca_biplot.png}
+  \includegraphics[width=0.62\linewidth]{08_ca_biplot.png}
   \caption{CA of a river fish gradient. Sites and species share the same space; the first
   axis recovers the longitudinal gradient of the river.}
   \label{fig:ca}
@@ -748,7 +748,7 @@ stressplot(md)                                   # Shepard diagram
 \end{lstlisting}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{15_mds.png}
+  \includegraphics[width=\linewidth]{09_mds.png}
   \caption{Left: an nMDS configuration. Right: the Shepard diagram plots configuration
   distance against original distance; a tight, monotone increasing cloud (near the red
   line) means the low-dimensional map faithfully preserves the dissimilarity ranks.}
@@ -823,7 +823,7 @@ correlation or residual error before settling on one.
 \end{pitfall}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{17_nmf.png}
+  \includegraphics[width=\linewidth]{10_nmf.png}
   \caption{Rank-3 NMF of a leukemia expression matrix. Left: the basis $\mathbf{W}$
   (gene signatures). Right: the coefficients $\mathbf{H}$, with samples ordered by
   subtype — the factors recover group structure without ever seeing the labels.}
@@ -904,7 +904,7 @@ unconstrained optimum lies outside that region the estimate is pinned to the bou
 \end{pitfall}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.5\linewidth]{16_fa_scree.png}
+  \includegraphics[width=0.5\linewidth]{11_fa_scree.png}
   \caption{Scree of the correlation-matrix eigenvalues; three points clear the Kaiser line
   (eigenvalue $=1$), though the fitted model retains two factors.}
   \label{fig:fa}
@@ -950,7 +950,7 @@ it. And because $W(C)$ decreases monotonically with $k$ — more centroids can n
 added clusters stop paying off, rather than for a minimum that does not exist.
 
 \begin{lstlisting}
-w <- wss(as.matrix(iris[,1:4]))      # WSS for k = 1..10 (helper in 05_Clustering.R)
+w <- wss(as.matrix(iris[,1:4]))      # WSS for k = 1..10 (helper in 04_Clustering.R)
 plot(w, type = "b"); abline(v = 3, lty = 2)
 km3 <- kmeans(iris[,1:4], 3, nstart = 25)
 table(cluster = km3$cluster, species = iris$Species)
@@ -975,8 +975,8 @@ the structure the Q-mode heatmap warned about in Chapter~\ref{ch:matrix}. Note t
 called ``1'' is an artefact of initialisation, and only the grouping is interpretable.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.52\linewidth]{05_kmeans_elbow.png}\hfill
-  \includegraphics[width=0.44\linewidth]{05_kmeans_pairs.png}
+  \includegraphics[width=0.52\linewidth]{04_kmeans_elbow.png}\hfill
+  \includegraphics[width=0.44\linewidth]{04_kmeans_pairs.png}
   \caption{Left: k-means elbow — WSS drops sharply to $k=3$ then flattens. Right: pairwise
   scatterplots coloured by cluster assignment; the \emph{setosa} cluster separates cleanly
   on every pair involving petal measurements, while the other two overlap along the
@@ -1026,7 +1026,7 @@ unit area asks a different question, and standardising before clustering puts th
 equal footing.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.7\linewidth]{05_hclust_ward.png}
+  \includegraphics[width=0.7\linewidth]{04_hclust_ward.png}
   \caption{Ward dendrogram of world regions clustered on standardized biodiversity
   variables, with the $k=3$ cut boxed. Cutting the tree at a chosen height yields discrete
   groups; the height of a merge is the cost that merge incurs, so a tall join means two
@@ -1035,7 +1035,7 @@ equal footing.
 \end{figure}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.92\linewidth]{05_hclust_linkages.png}
+  \includegraphics[width=0.92\linewidth]{04_hclust_linkages.png}
   \caption{The same distances under four linkage rules. Single linkage chains regions into
   a staircase; complete and average give more balanced trees; Ward, the minimum-variance
   criterion, produces the most compact groups. Nothing about the data changed between these
@@ -1160,7 +1160,7 @@ effect alone. It is also a reminder that model selection is an empirical questio
 code on a different data set can, and here does, reverse the verdict.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{19_glm.png}
+  \includegraphics[width=\linewidth]{13_glm.png}
   \caption{GLM fits: a Gamma model for positive-continuous biomass (left) and a Poisson
   model for species counts (right). The link keeps predictions in the valid range that a
   straight OLS line would violate.}
@@ -1208,7 +1208,7 @@ number of predictors. A permutation test (\code{anova.cca}) provides overall
 significance, and \code{ordiR2step} does forward selection of predictors.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.66\linewidth]{20_rda.png}
+  \includegraphics[width=0.66\linewidth]{14_rda.png}
   \caption{RDA triplot: sites (points), species (text) and environmental predictors
   (arrows). Arrow length and direction show which gradients drive community composition;
   this is multivariate multiple regression made visual.}
@@ -1412,10 +1412,10 @@ frequencies alone would have bought.
 \end{keybox}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.52\linewidth]{25_cart_tree.png}\hfill
-  \includegraphics[width=0.44\linewidth]{25_rf_importance.png}
+  \includegraphics[width=0.52\linewidth]{15_cart_tree.png}\hfill
+  \includegraphics[width=0.44\linewidth]{15_rf_importance.png}
   \caption{The two objects every ensemble in this chapter is built from, drawn here on
-  the book's small companion example (\code{R/25\_SupervisedML.R}) so that the structure
+  the book's small companion example (\code{R/15\_SupervisedML.R}) so that the structure
   stays legible at page size. Left: a fitted classification tree — the interpretable base
   learner. Right: random-forest variable importance. The qualitative lesson carries over
   to the anuran and AVONET analyses discussed above, where a handful of the measured
@@ -1482,7 +1482,7 @@ a two-dimensional PCA view is necessarily a partial one; the manifold learners s
 two dimensions on local structure instead.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{26_embeddings.png}
+  \includegraphics[width=\linewidth]{16_embeddings.png}
   \caption{Three views of the same leukemia expression matrix (1000 genes, 60 patients).
   PCA (left) is the linear baseline; t-SNE (middle) and UMAP (right) reorganise the same
   samples by local neighbourhood structure. Cluster \emph{positions} and \emph{separations}
@@ -1560,7 +1560,7 @@ network has ample capacity to memorise; the penalty $\lambda\sum w^2$ added to t
 what keeps it from doing so, and is the direct analogue of ridge shrinkage.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.62\linewidth]{21_nn_boundary.png}
+  \includegraphics[width=0.62\linewidth]{17_nn_boundary.png}
   \caption{The network's non-linear decision surface on the two petal variables. Compare
   with the axis-aligned rectangles a single tree produces in Chapter~\ref{ch:supml}: both models are
   free of distributional assumptions, but they carve the space in quite different ways.}
@@ -1632,8 +1632,8 @@ CNN1_adagrad      0.00942          1.00
 \end{lstlisting}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.49\linewidth]{21_training_history_val_accuracy_flowers.pdf}\hfill
-  \includegraphics[width=0.49\linewidth]{21_training_history_val_loss_flowers.pdf}
+  \includegraphics[width=0.49\linewidth]{17_training_history_val_accuracy_flowers.pdf}\hfill
+  \includegraphics[width=0.49\linewidth]{17_training_history_val_loss_flowers.pdf}
   \caption{Training history for the flower classifiers: validation accuracy (left) and
   validation loss (right) by epoch. The curve to watch is the validation one — training
   loss falling while validation loss turns upward is the signature of overfitting, and is
@@ -1762,7 +1762,7 @@ protein structure at atomic accuracy — a reminder that the embedding idea is n
 to text.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.62\linewidth]{27_llm_embeddings.png}
+  \includegraphics[width=0.62\linewidth]{18_llm_embeddings.png}
   \caption{A PCA projection of word embeddings. Semantically related words cluster —
   royalty/gender, geography, animals, biology — because the embedding places meaning in
   geometry. The same PCA, distances and clustering from earlier chapters now operate on
@@ -1839,8 +1839,8 @@ surface rather than the surface — and the \emph{suitability surface} itself ov
 bioclimatic axes.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{22_enm_response.png}\\[6pt]
-  \includegraphics[width=0.7\linewidth]{22_enm_surface.png}
+  \includegraphics[width=\linewidth]{19_enm_response.png}\\[6pt]
+  \includegraphics[width=0.7\linewidth]{19_enm_surface.png}
   \caption{Fitting stage. Top: response curves for the additive and quadratic models —
   only the second has an optimum. Bottom: the fitted suitability surface over
   temperature and precipitation, with detections overlaid.}
@@ -1887,7 +1887,7 @@ misidentified or mis-georeferenced ones — and halves the predicted area. Neith
 correct in the abstract; what is not defensible is failing to say which was used.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{23_enm_thresholds.png}
+  \includegraphics[width=\linewidth]{20_enm_thresholds.png}
   \caption{Evaluation stage. Left: the ROC curve summarised by AUC. Right: predicted area
   as a function of the threshold, with the three standard rules marked — the same model
   yields a quarter or three-quarters of the landscape depending on that one choice.}
@@ -1902,7 +1902,7 @@ extrapolation, and a quadratic term extrapolates violently. Flagging those point
 idea behind the multivariate environmental similarity surface (MESS).
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=0.78\linewidth]{23_enm_transfer.png}
+  \includegraphics[width=0.78\linewidth]{20_enm_transfer.png}
   \caption{Transfer stage. Current suitability against a $+3^\circ$C scenario, with
   points falling outside the training range of the predictors marked separately. Those
   are the predictions the model has no evidence for.}
@@ -1947,7 +1947,7 @@ c(fill = mean(pam), mean_alpha = mean(alpha), mean_omega = mean(omega))
 \end{lstlisting}
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{24_pam.png}
+  \includegraphics[width=\linewidth]{21_pam.png}
   \caption{A presence--absence matrix (left, sites ordered by latitude), the richness
   gradient it implies ($\alpha$ per site, middle), and the frequency distribution of
   range sizes ($\omega$ per species, right).}

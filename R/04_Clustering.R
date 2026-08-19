@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 05_Clustering.R — k-means & hierarchical clustering
+##  MS_LJMR :: 04_Clustering.R — k-means & hierarchical clustering
 ##
 ##  Original authors: Jorge Soberón & Laura Jiménez
 ##                    (BIOL 943 Multivariate Methods, University of Kansas)
@@ -55,7 +55,7 @@ wss <- function(data, kmax = 10, nstart = 25) {
   tot
 }
 w <- wss(Xi)
-with_fig("05_kmeans_elbow", {
+with_fig("04_kmeans_elbow", {
   plot(w, type = "b", pch = 19, col = "#1f3b73", lwd = 2,
        xlab = "Number of clusters k", ylab = "Total within-cluster SS",
        main = "k-means elbow (iris)")
@@ -70,7 +70,7 @@ cat("k-means (k=3) vs species:\n"); print(ct)
 cat("\nAgreement (max assignment) =",
     round(sum(apply(ct, 1, max)) / nrow(iris), 3), "\n")
 
-with_fig("05_kmeans_pairs", {
+with_fig("04_kmeans_pairs", {
   pairs(Xi, col = c("#1f3b73", "#8c2d3a", "#2a7f7f")[km3$cluster], pch = 19,
         main = "k-means (k = 3) assignments")
 })
@@ -94,7 +94,7 @@ Dreg   <- dist(M)                               # Euclidean on standardized mean
 ## (a) compare four linkage rules --------------------------------------------
 methods <- c(single = "single", complete = "complete",
              average = "average", ward = "ward.D2")
-with_fig("05_hclust_linkages", {
+with_fig("04_hclust_linkages", {
   op <- par(mfrow = c(2, 2), mar = c(2, 4, 2, 1)); on.exit(par(op))
   for (nm in names(methods))
     plot(hclust(Dreg, method = methods[nm]), main = nm, xlab = "", sub = "")
@@ -104,9 +104,9 @@ with_fig("05_hclust_linkages", {
 tree <- hclust(Dreg, method = "ward.D2")
 grp  <- cutree(tree, k = 3)
 cat("\nWard clusters of world regions (k = 3):\n"); print(grp)
-with_fig("05_hclust_ward", {
+with_fig("04_hclust_ward", {
   plot(tree, main = "Ward clustering of world regions", xlab = "", sub = "")
   rect.hclust(tree, k = 3, border = c("#1f3b73", "#8c2d3a", "#2a7f7f"))
 })
 
-cat("\n[05_Clustering] done.\n")
+cat("\n[04_Clustering] done.\n")

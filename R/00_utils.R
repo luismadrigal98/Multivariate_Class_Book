@@ -237,7 +237,7 @@ get_data <- function(name, seed = 1998, quiet = FALSE) {
 ## The real table has no per-taxon "diversity index"; what it carries alongside
 ## raw richness is Dens*Rich, richness per unit area. Earlier versions of this
 ## generator invented tidier *Div names that exist in no real file, which is
-## exactly the mismatch that used to break 05_Clustering.R.
+## exactly the mismatch that used to break 04_Clustering.R.
 .sim_biodiv <- function() {
   regions <- c("APC","CAR","EECA","LAM","MENA","NAM","SSA","WEU")
   n <- 186

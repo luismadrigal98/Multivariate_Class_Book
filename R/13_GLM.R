@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 19_GLM.R — Generalized Linear Models (multivariate predictors)
+##  MS_LJMR :: 13_GLM.R — Generalized Linear Models (multivariate predictors)
 ##
 ##  Original authors: Marlon E. Cobos & Jorge Soberón
 ##                    (BIOL 943 Multivariate Methods, University of Kansas)
@@ -52,7 +52,7 @@ print(round(coef(g_pois), 4))
 g_int <- glm(Species ~ Tmp * pH, family = poisson, data = m)
 cat("\nAIC additive vs interaction:\n"); print(AIC(g_pois, g_int))
 
-with_fig("19_glm", width = 10, height = 4.4, {
+with_fig("13_glm", width = 10, height = 4.4, {
   op <- par(mfrow = c(1, 2)); on.exit(par(op))
   plot(m$Tmp, m$Biomass, pch = 19, col = "#1f3b7355",
        xlab = "Temperature", ylab = "Biomass", main = "Gamma GLM fit")
@@ -62,5 +62,5 @@ with_fig("19_glm", width = 10, height = 4.4, {
        xlab = "pH", ylab = "Species (count)", main = "Poisson GLM fit")
 })
 
-cat("\n[19_GLM] choose the error family by the response: Gamma for positive",
+cat("\n[13_GLM] choose the error family by the response: Gamma for positive",
     "continuous, Poisson for counts, binomial for 0/1. AIC compares models.\n")

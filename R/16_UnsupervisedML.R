@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 26_UnsupervisedML.R — Unsupervised Machine Learning
+##  MS_LJMR :: 16_UnsupervisedML.R — Unsupervised Machine Learning
 ##
 ##  Author: Luis J. Madrigal-Roca  (new session for the MS_LJMR edition)
 ##
@@ -56,7 +56,7 @@ ts <- Rtsne::Rtsne(X, dims = 2, perplexity = 15, pca = TRUE, verbose = FALSE)
 um <- uwot::umap(X, n_neighbors = 15, min_dist = 0.1, n_components = 2)
 
 ## ---- Compare the three embeddings ------------------------------------------
-with_fig("26_embeddings", {
+with_fig("16_embeddings", {
   op <- par(mfrow = c(1, 3), mar = c(4, 4, 3, 1)); on.exit(par(op))
   plot(pc$x[, 1:2], col = cols, pch = 19, main = "PCA (linear)",
        xlab = sprintf("PC1 (%.0f%%)", 100*ve[1]), ylab = "PC2")
@@ -79,4 +79,4 @@ cat("k-NN label purity  PCA:", round(purity(pc$x[,1:2], type), 3),
     " t-SNE:", round(purity(ts$Y, type), 3),
     " UMAP:", round(purity(um, type), 3), "\n")
 
-cat("\n[26_UnsupervisedML] done. Non-linear maps usually raise local purity.\n")
+cat("\n[16_UnsupervisedML] done. Non-linear maps usually raise local purity.\n")

@@ -1,5 +1,5 @@
 ## ============================================================================
-##  MS_LJMR :: 09_PCA.R  — Principal Component Analysis (I–III, PCoA folded in)
+##  MS_LJMR :: 07_PCA.R  — Principal Component Analysis (I–III, PCoA folded in)
 ##
 ##  Original authors: Laura Jiménez & Jorge Soberón
 ##                    (BIOL 943 Multivariate Methods, University of Kansas)
@@ -17,7 +17,7 @@
 ##  * A clean biplot, a scree plot with the Kaiser rule, and a PCoA section that
 ##    shows metric MDS on a Euclidean distance reproduces PCA scores.
 ##
-##  Run:  source("R/00_utils.R"); source("R/09_PCA.R")
+##  Run:  source("R/00_utils.R"); source("R/07_PCA.R")
 ## ============================================================================
 ## ---------------------------------------------------------------------------
 ##  STANDALONE USE (no repository needed)
@@ -80,7 +80,7 @@ cat("\nmax|hand scores - prcomp scores| =",
     format(max(abs(scores - pc_prcomp$x)), digits = 3), "\n")
 
 ## ---- 4. Scree plot (Kaiser rule) -------------------------------------------
-with_fig("09_pca_scree", {
+with_fig("07_pca_scree", {
   plot(lambda, type = "b", pch = 19, col = "#1f3b73", lwd = 2,
        xlab = "Principal component", ylab = "Eigenvalue",
        main = "Iris PCA — scree plot")
@@ -90,7 +90,7 @@ with_fig("09_pca_scree", {
 
 ## ---- 5. Biplot -------------------------------------------------------------
 cols <- c("#1f3b73", "#8c2d3a", "#2a7f7f")
-with_fig("09_pca_biplot", {
+with_fig("07_pca_biplot", {
   plot(scores[, 1:2], col = cols[sp], pch = 19,
        xlab = sprintf("PC1 (%.1f%%)", 100 * lambda[1] / sum(lambda)),
        ylab = sprintf("PC2 (%.1f%%)", 100 * lambda[2] / sum(lambda)),
@@ -116,11 +116,11 @@ cat("\nPCoA vs PCA — correlation of axis 1:",
     round(cor(pcoa_pts[, 1], scores[, 1]), 4),
     " axis 2:", round(cor(pcoa_pts[, 2], scores[, 2]), 4), "\n")
 
-with_fig("09_pcoa_vs_pca", {
+with_fig("07_pcoa_vs_pca", {
   plot(pcoa_pts, col = cols[sp], pch = 19, asp = 1,
        xlab = "PCoA axis 1", ylab = "PCoA axis 2",
        main = "PCoA on Euclidean distance = PCA")
   abline(h = 0, v = 0, col = "grey70")
 })
 
-cat("\n[09_PCA] done. Figures written to figs/ when run in batch.\n")
+cat("\n[07_PCA] done. Figures written to figs/ when run in batch.\n")
