@@ -84,7 +84,10 @@ cat("\nCross-validated accuracy (caret resamples):\n")
 print(summary(res)$statistics$Accuracy[, c("Mean", "Median", "Max.")])
 
 with_fig("15_caret_compare", {
-  dotplot(res, metric = "Accuracy", main = "Tuned model comparison (5-fold CV)")
+  ## dotplot() returns a lattice object; inside a function it must be printed
+  ## explicitly or nothing is drawn and no file is written.
+  print(dotplot(res, metric = "Accuracy",
+                main = "Tuned model comparison (5-fold CV)"))
 })
 
 ## ---- 4. Confusion matrix of the best model on the held-out test set --------
