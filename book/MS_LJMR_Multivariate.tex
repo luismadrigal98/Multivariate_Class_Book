@@ -192,8 +192,8 @@ algebra moves: centering, scaling, distance, and eigen/singular-value decomposit
 
 The material grew out of Dr. Jorge Sober\'on's Multivariate Methods course. The revised
 Fall-2026 schedule folds Principal Coordinate Analysis into the Principal Components
-sequence, retires the standalone visualization sessions, and adds four sessions on
-machine learning. This edition follows that schedule. It also rebuilds the course's \R{}
+sequence, retires the standalone \pkg{ggplot2} session, and adds four sessions on machine
+learning. This edition follows that schedule chapter for chapter. It also rebuilds the course's \R{}
 scripts into a single, portable package, \code{MS\_LJMR/}, that runs on Windows, macOS,
 Linux and in batch mode without editing a single path.
 
@@ -210,10 +210,12 @@ connects back to the classical theory (\textcolor{wteal}{\textbf{From the ML cou
 
 % ###########################################################################
 \part{Foundations}
+\label{part:found}
 % ###########################################################################
 
 % ===========================================================================
 \chapter{The Multivariate Data Matrix}
+\label{ch:matrix}
 % ===========================================================================
 \section{Two views of one table}
 A multivariate data set is a matrix $\mathbf{X}$ with $n$ rows (objects, sites,
@@ -299,7 +301,157 @@ species counts.
 \end{pitfall}
 
 % ===========================================================================
+\chapter{Seeing the Data Matrix}
+\label{ch:viz}
+% ===========================================================================
+Chapter~\ref{ch:matrix} defined the two views of a table. This chapter asks a blunter
+question: how far can you get by simply \emph{looking} at it? The answer matters, because
+every ordination in Part~\ref{part:ord} is a device for seeing what direct display cannot
+reach, and the case for those devices is only convincing once direct display has visibly
+run out.
+
+\section{Reading a table before modelling it}
+The first operations on a new matrix are not statistical. How many rows and columns;
+which columns are numeric and which are factors; what the marginal distributions look
+like; whether values are missing, and in what pattern. In \R{} this is four calls.
+
+\begin{lstlisting}
+m <- get_data("iris")
+dim(m); str(m); summary(m)
+unique(m$Species)
+\end{lstlisting}
+
+A histogram is the univariate marginal of one column, and it carries one warning worth
+stating early: the bin width is a choice made by the analyst, not a property of the data.
+The same column can look unimodal at eight bins and bimodal at thirty
+(Figure~\ref{fig:hist}). Report which you used.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{02_histograms.png}
+  \caption{One column, two bin widths. Neither picture is wrong; they answer different
+  questions, and only one of them is usually reported.}
+  \label{fig:hist}
+\end{figure}
+
+\section{The scatterplot matrix is the R view, drawn}
+Plotting every pair of columns produces the scatterplot matrix, and it is worth naming
+what that object is: the same $p\times p$ grid as the correlation matrix of
+Chapter~\ref{ch:matrix}, with each correlation coefficient replaced by the cloud of
+points that produced it. The numeric summary tells you the two petal variables are
+collinear at $r=0.96$; the panel tells you \emph{why}, and would also reveal a curved or
+grouped relationship that the coefficient would have flattened into a single misleading
+number.
+
+\begin{lstlisting}
+pairs(m[, 1:4], pch = 19, col = pal[factor(m$Species)])
+\end{lstlisting}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.78\linewidth]{02_pairs.png}
+  \caption{Every pair of iris measurements, coloured by species. The petal panels
+  separate the species almost completely; the sepal panels do not — the same conclusion
+  the discriminant analysis of Chapter~\ref{ch:lda} reaches formally.}
+  \label{fig:pairs}
+\end{figure}
+
+\section{Centroid and covariance, drawn as an ellipse}
+The multivariate counterpart of ``mean and standard deviation'' is ``centroid and
+covariance matrix'', and its natural picture is an ellipse: centre at the centroid, axes
+along the eigenvectors of the covariance, lengths proportional to the square roots of its
+eigenvalues. Those eigenvectors are already the principal components of
+Chapter~\ref{ch:pca}, arrived at by drawing rather than by algebra.
+
+The same covariance matrix also generates data, through the affine property of the
+multivariate normal: if $\mathbf{\Sigma}=\mathbf{A}^{\!\top}\mathbf{A}$ is a Cholesky
+factorization and $\mathbf{z}\sim N(\mathbf{0},\mathbf{I})$, then
+$\mathbf{A}^{\!\top}\mathbf{z}+\boldsymbol{\mu}\sim N(\boldsymbol{\mu},\mathbf{\Sigma})$.
+Overlaying a simulated cloud on the observed points is a fast, purely visual goodness-of-fit
+check for the Gaussian assumption that discriminant analysis will later rely on.
+
+\begin{lstlisting}
+h <- cluster::ellipsoidhull(as.matrix(X[grp == g, 1:2]))
+A <- chol(h$cov)                                   # Sigma = A'A
+cloud <- matrix(rnorm(2 * n), n, 2) %*% A +
+         matrix(h$loc, n, 2, byrow = TRUE)         # ~ N(loc, cov)
+lines(predict(h))
+\end{lstlisting}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.72\linewidth]{02_ellipsoid_hulls.png}
+  \caption{Minimum-volume ellipsoid per species, with a cloud simulated from the same
+  centroid and covariance. Where the cloud and the data disagree in shape, the Gaussian
+  assumption is doing poorly.}
+  \label{fig:ellipse}
+\end{figure}
+
+\section{Three dimensions, and the wall behind them}
+A third variable can be added with a projected 3-D scatter, a fourth with colour, and a
+fifth with plotting symbol or text. Beyond that the display saturates. Worse, the 3-D
+scatter is not really three-dimensional: it is a 2-D projection at an angle chosen by the
+analyst, and the apparent structure changes with the angle
+(Figure~\ref{fig:angles}). This is the pivot of the whole book. Choosing a projection is
+unavoidable; the only question is whether it is chosen by eye or by a criterion. PCA
+chooses the projection that maximizes retained variance, MDS the one that best preserves
+distances, and discriminant analysis the one that best separates known groups.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{03_projection_angles.png}
+  \caption{One data set, three viewing angles. Each is a legitimate 2-D projection of the
+  same three variables, and they do not tell the same story — the argument for choosing
+  projections by an explicit criterion rather than by rotation.}
+  \label{fig:angles}
+\end{figure}
+
+Aggregation is the other lever available before ordination. The biodiversity table has
+186 countries, far too many to label; averaging to eight world regions turns an
+unreadable cloud into eight annotated points (Figure~\ref{fig:biodiv3d}), and it is the
+same aggregation the hierarchical clustering of Chapter~\ref{ch:clust} operates on.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.68\linewidth]{03_biodiv_3d.png}
+  \caption{Mean amphibian, reptile and bird richness by world region. Dropped lines
+  restore the depth cue that a bare projection destroys; \code{xyz.convert()} maps the
+  3-D coordinates back to the page so ordinary \code{text()} can label them.}
+  \label{fig:biodiv3d}
+\end{figure}
+
+\section{Adding structure to the panels}
+\pkg{car}'s \code{scatterplotMatrix()} is \code{pairs()} with a linear fit, a loess
+smoother and a marginal density in every panel. The loess is the part that earns its
+place: it shows whether the linear summary that PCA, canonical correlation and the GLMs
+all assume is actually defensible for these variables. Conditioning the same matrix on a
+factor splits each panel by group, which is how you discover that a global ordination is
+about to average away two genuinely different relationships.
+
+\begin{lstlisting}
+car::scatterplotMatrix(~ mpg + disp + drat + wt | factor(cyl), data = cars,
+                       regLine = list(col = "grey20"), smooth = FALSE)
+\end{lstlisting}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.72\linewidth]{03_spm_mtcars.png}
+  \caption{\code{mtcars}: linear fit (red) against a loess smoother (blue) in every
+  panel. Where the two diverge, a correlation coefficient is not a fair summary.}
+  \label{fig:spm}
+\end{figure}
+
+\begin{keybox}
+Direct display handles about four variables. Every method in the rest of this book is a
+rule for choosing the projection that a fifth variable makes necessary — and the rules
+differ only in what they ask the projection to preserve: variance (PCA), $\chi^2$
+distance (CA), rank order of distances (MDS), or between-group separation (LDA).
+\end{keybox}
+
+\begin{pitfall}
+A scatterplot matrix on unstandardized variables is still readable, because each panel
+sets its own axis limits. A \emph{distance} computed on the same unstandardized variables
+is not — it is dominated by whichever column has the largest range. Visual inspection is
+forgiving in a way the arithmetic that follows is not.
+\end{pitfall}
+
+% ===========================================================================
 \chapter{The Linear Algebra of Ordination}
+\label{ch:linalg}
 % ===========================================================================
 \section{Transformations as matrices}
 Every linear operation on data — rotation, stretching, projection — is a matrix
@@ -374,10 +526,12 @@ everywhere.
 
 % ###########################################################################
 \part{Ordination and Dimension Reduction}
+\label{part:ord}
 % ###########################################################################
 
 % ===========================================================================
 \chapter{Principal Component Analysis}
+\label{ch:pca}
 % ===========================================================================
 Principal Component Analysis (PCA), pioneered independently by Karl Pearson \cite{Pearson_1901} and Harold Hotelling \cite{Hotelling_1933}, rotates the variables into a new orthogonal set of axes — the \emph{principal components} — ordered so that the first captures the most variance, the second the most of what remains, and so on. By transforming correlated variables into a smaller number of uncorrelated principal components, PCA effectively separates the signal from the noise in high-dimensional data. Following the revised schedule, this chapter also folds in \emph{Principal Coordinate Analysis} (PCoA), which we show is PCA seen through a distance matrix.
 
@@ -480,12 +634,13 @@ you used — they can give qualitatively different ordinations.
 
 % ===========================================================================
 \chapter{Correspondence Analysis}
+\label{ch:ca}
 % ===========================================================================
 Correspondence Analysis (CA) is PCA adapted to \emph{counts} — contingency tables of
 non-negative integers, such as species abundances across sites. Instead of Euclidean
 distance it uses the $\chi^2$ distance, and it ordinates rows (sites) and columns
 (species) \emph{simultaneously}, because it is the SVD of a single $\chi^2$-standardized
-matrix (recall the Q/R eigenvalue identity from Chapter~1).
+matrix (recall the Q/R eigenvalue identity from Chapter~\ref{ch:matrix}).
 
 \section{The mechanics}
 Let $\mathbf{P}=\mathbf{N}/n_{\!++}$ be the table of relative frequencies with row and
@@ -552,6 +707,7 @@ detrending as a diagnostic, not a default.
 
 % ===========================================================================
 \chapter{Multidimensional Scaling}
+\label{ch:mds}
 % ===========================================================================
 Where PCA and CA are eigen-methods, \emph{non-metric multidimensional scaling} (nMDS)
 is an \emph{optimisation}. It seeks a low-dimensional configuration whose inter-point
@@ -607,6 +763,7 @@ the right question. Garbage distance in, low-stress garbage out.
 
 % ===========================================================================
 \chapter{Non-negative Matrix Factorization}
+\label{ch:nmf}
 % ===========================================================================
 Non-negative Matrix Factorization (NMF) approximates a non-negative data matrix as
 $\mathbf{A}\approx\mathbf{W}\mathbf{H}$ with \emph{both} factors non-negative
@@ -621,7 +778,7 @@ For an $n\times p$ matrix $\mathbf{A}\ge 0$ and a chosen rank $k\ll\min(n,p)$, N
   \min_{\mathbf{W}\ge 0,\ \mathbf{H}\ge 0}\ \lVert \mathbf{A}-\mathbf{W}\mathbf{H}\rVert_F^{2},
   \qquad \mathbf{W}\in\mathbb{R}^{n\times k},\ \mathbf{H}\in\mathbb{R}^{k\times p}.
 \]
-Unlike the SVD of Chapter~2, this problem has no closed-form solution and is not convex in
+Unlike the SVD of Chapter~\ref{ch:linalg}, this problem has no closed-form solution and is not convex in
 $\mathbf{W}$ and $\mathbf{H}$ jointly — although it \emph{is} convex in each factor with the
 other held fixed, which is what makes alternating schemes attractive. The standard
 multiplicative update rules exploit exactly that structure:
@@ -675,6 +832,7 @@ correlation or residual error before settling on one.
 
 % ===========================================================================
 \chapter{Exploratory Factor Analysis}
+\label{ch:fa}
 % ===========================================================================
 Factor analysis (FA) looks superficially like PCA but rests on a different model. PCA
 re-expresses \emph{all} the variance with components that are exact linear combinations
@@ -760,10 +918,12 @@ PCA loadings as ``factors'' — a common slip — conflates the two models.
 
 % ###########################################################################
 \part{Classification and Association}
+\label{part:class}
 % ###########################################################################
 
 % ===========================================================================
 \chapter{Clustering}
+\label{ch:clust}
 % ===========================================================================
 Clustering partitions objects into groups without using labels. We cover the two
 classroom workhorses: \emph{k-means} (partition around $k$ centroids) and
@@ -810,7 +970,7 @@ The elbow sits at $k=3$ (Figure~\ref{fig:elbow}). The cross-tabulation shows the
 unsupervised clusters recover the species with $89.3\%$ agreement: \emph{setosa} is
 perfect — it occupies a cluster of its own, and nothing else is assigned to it — while
 \emph{versicolor} and \emph{virginica} bleed into each other across two clusters, exactly
-the structure the Q-mode heatmap warned about in Chapter~1. Note that the cluster
+the structure the Q-mode heatmap warned about in Chapter~\ref{ch:matrix}. Note that the cluster
 \emph{numbers} carry no meaning: k-means never sees the labels, so which partition is
 called ``1'' is an artefact of initialisation, and only the grouping is interpretable.
 
@@ -892,6 +1052,7 @@ choice is substantive, not cosmetic.
 
 % ===========================================================================
 \chapter{Discriminant Analysis}
+\label{ch:lda}
 % ===========================================================================
 Discriminant analysis is \emph{supervised} ordination: given labelled groups, it finds
 the axes that best \emph{separate} them. Linear Discriminant Analysis (LDA) maximises the
@@ -943,6 +1104,7 @@ next chapter.
 
 % ===========================================================================
 \chapter{Multivariate Generalized Linear Models}
+\label{ch:glm}
 % ===========================================================================
 Ordinary regression assumes a continuous, unbounded response with Gaussian, constant-
 variance errors. Ecological responses rarely oblige: biomass is positive, counts are
@@ -1013,6 +1175,7 @@ errors will be too small and everything looks significant.
 
 % ===========================================================================
 \chapter{Canonical Correlation and Redundancy Analysis}
+\label{ch:cancor}
 % ===========================================================================
 The final classical methods generalise correlation and regression from vectors to
 \emph{two tables}. Canonical Correlation Analysis (CCorA) is the two-table analogue of
@@ -1062,12 +1225,14 @@ at once.
 
 % ###########################################################################
 \part{Machine Learning}
+\label{part:ml}
 % ###########################################################################
 
 % ===========================================================================
 \chapter{Supervised Machine Learning}
+\label{ch:supml}
 % ===========================================================================
-The classical classifiers of Chapter~8 assume a functional form and estimate its
+The classical classifiers of Chapter~\ref{ch:lda} assume a functional form and estimate its
 parameters. Tree-based learners abandon that premise entirely: they \emph{partition}
 the feature space with axis-aligned splits, capturing interactions and non-linearities
 without any distributional assumption. This chapter follows two worked ecological
@@ -1123,7 +1288,7 @@ imbalanced one — \emph{Leptodactylidae} contributes 4420 recordings while
 \emph{Bufonidae} contributes only 68.
 
 Before any model is fitted, the 22 predictors are screened for redundancy. This is the
-R-mode correlation view of Chapter~1 doing practical work: one variable from every pair
+R-mode correlation view of Chapter~\ref{ch:matrix} doing practical work: one variable from every pair
 correlated above $|r|=0.7$ is dropped, since collinear predictors add no information and
 make the resulting tree harder to read.
 
@@ -1229,8 +1394,8 @@ models <- list(
 \end{lstlisting}
 
 Note what the candidate list contains: \code{hda} is a discriminant analysis — the method
-of Chapter~8 — entered as one competitor among many, and \code{avNNet} is a small neural
-network, the subject of Chapter~14. The framework is indifferent to a method's pedigree;
+of Chapter~\ref{ch:lda} — entered as one competitor among many, and \code{avNNet} is a small neural
+network, the subject of Chapter~\ref{ch:nn}. The framework is indifferent to a method's pedigree;
 it asks only how each performs under a common resampling protocol.
 
 For the trophic-niche classification the random forest won, reaching an accuracy of
@@ -1255,12 +1420,13 @@ frequencies alone would have bought.
   learner. Right: random-forest variable importance. The qualitative lesson carries over
   to the anuran and AVONET analyses discussed above, where a handful of the measured
   dimensions likewise carries most of the discriminating signal, echoing the loading
-  structure seen in the PCA of Chapter~3.}
+  structure seen in the PCA of Chapter~\ref{ch:pca}.}
   \label{fig:mlimp}
 \end{figure}
 
 % ===========================================================================
 \chapter{Unsupervised Machine Learning: t-SNE and UMAP}
+\label{ch:unsupml}
 % ===========================================================================
 PCA is a \emph{linear} projection: it preserves global variance but can leave curved,
 clustered structure tangled. Modern \emph{manifold learners} — t-SNE and UMAP — are
@@ -1342,6 +1508,7 @@ apart groups are — for that, return to PCA or PCoA.
 
 % ===========================================================================
 \chapter{Neural Networks and Deep Learning}
+\label{ch:nn}
 % ===========================================================================
 A neural network stacks linear maps and non-linear activations so that, with enough
 hidden units, it can approximate essentially any function; training adjusts the weights by
@@ -1358,7 +1525,7 @@ alternating affine transformations with a non-linearity $\sigma$:
   \qquad \ell=1,\dots,L .
 \]
 Strip out $\sigma$ and the whole stack collapses: a composition of affine maps is itself
-affine, and the network could do no more than the linear methods of Part~II. The
+affine, and the network could do no more than the linear methods of Part~\ref{part:ord}. The
 non-linearity is what buys the extra expressive power, and with a single sufficiently wide
 hidden layer the family is already a universal approximator.
 
@@ -1369,7 +1536,7 @@ classification the loss is the categorical cross-entropy
   \mathcal{L}=-\sum_{i=1}^{n}\sum_{k=1}^{K} y_{ik}\log \hat{p}_{ik},
 \]
 which is exactly the negative log-likelihood of a multinomial model — the same estimation
-principle as the GLMs of Chapter~11, applied to a far more flexible mean function.
+principle as the GLMs of Chapter~\ref{ch:glm}, applied to a far more flexible mean function.
 
 \section{Track A: a network you can run anywhere}
 The self-contained track uses base-\R's \pkg{nnet}: one hidden layer, softmax output,
@@ -1395,7 +1562,7 @@ what keeps it from doing so, and is the direct analogue of ridge shrinkage.
 \begin{figure}[htbp]\centering
   \includegraphics[width=0.62\linewidth]{21_nn_boundary.png}
   \caption{The network's non-linear decision surface on the two petal variables. Compare
-  with the axis-aligned rectangles a single tree produces in Chapter~12: both models are
+  with the axis-aligned rectangles a single tree produces in Chapter~\ref{ch:supml}: both models are
   free of distributional assumptions, but they carve the space in quite different ways.}
   \label{fig:nn}
 \end{figure}
@@ -1513,13 +1680,14 @@ Neural networks are the most eager over-fitters in this book. They demand standa
 inputs, explicit regularisation (weight decay, dropout, batch normalisation), and an honest
 validation split. On the small tabular data typical of ecology, a random forest usually
 matches or beats a neural net with a fraction of the tuning — as the AVONET comparison in
-Chapter~12 found, where \code{avNNet} competed against tree ensembles and lost.
+Chapter~\ref{ch:supml} found, where \code{avNNet} competed against tree ensembles and lost.
 \end{pitfall}
 
 % ===========================================================================
 \chapter{Large Language Models and Embeddings}
+\label{ch:llm}
 % ===========================================================================
-The course ends where machine learning meets the theme of Chapter~1. A large language
+The course ends where machine learning meets the theme of Chapter~\ref{ch:matrix}. A large language
 model (LLM) turns each word, sentence or document into a high-dimensional vector — an
 \emph{embedding} — arranged so that geometric proximity encodes \emph{meaning}. An
 embedding \emph{is} a row of a multivariate data matrix, so every tool in this book
@@ -1533,7 +1701,7 @@ vectors is just the dot product:
        {\lVert\mathbf{u}\rVert\,\lVert\mathbf{v}\rVert}.
 \]
 Cosine is preferred to Euclidean distance here for the same reason correlation is preferred
-to covariance in Chapter~1: it discards magnitude and keeps direction. In a language model
+to covariance in Chapter~\ref{ch:matrix}: it discards magnitude and keeps direction. In a language model
 the magnitude of a token's vector largely tracks how often the token appears, which is
 rarely what we mean by similarity.
 
@@ -1582,7 +1750,7 @@ is a weighted average of all the values in the sequence:
     =\operatorname{softmax}\!\left(\frac{\mathbf{Q}\mathbf{K}^{\!\top}}{\sqrt{d_k}}\right)\mathbf{V}.
 \]
 The inner product $\mathbf{Q}\mathbf{K}^{\!\top}$ is a similarity matrix between every pair
-of positions — a Q-mode matrix in the vocabulary of Chapter~1 — and the softmax turns each
+of positions — a Q-mode matrix in the vocabulary of Chapter~\ref{ch:matrix} — and the softmax turns each
 of its rows into weights summing to one. The scaling by $\sqrt{d_k}$ keeps those inner
 products from growing with dimension and driving the softmax into saturation. The result is
 a representation whose meaning depends on context, so that the vector for a word is no
@@ -1603,7 +1771,7 @@ to text.
 \end{figure}
 
 \begin{keybox}
-Nothing in this chapter is new machinery — it is the \emph{data matrix} of Chapter~1,
+Nothing in this chapter is new machinery — it is the \emph{data matrix} of Chapter~\ref{ch:matrix},
 populated by a language model instead of a caliper. Transformers \cite{Vaswani_2017}
 produce the vectors; the multivariate toolbox of this book interprets them. That is the
 throughline of the course: master the geometry of the data matrix, and every method,
@@ -1612,27 +1780,38 @@ classical or modern, becomes a variation on one theme.
 
 % ###########################################################################
 \part{Applications in Spatial Ecology}
+\label{part:spatial}
 % ###########################################################################
 
 % ===========================================================================
 \chapter{Ecological Niche Modeling}
+\label{ch:enm}
 % ===========================================================================
 An ecological niche model (ENM) estimates the environmental conditions where a species
-can occur. Statistically it is a \emph{binomial regression} — the GLM of Chapter~11 —
-whose response is presence/absence (or presence/background) and whose predictors are
-climate variables. The fitted surface, projected onto geography, becomes a suitability
-map. The full classroom pipeline uses spatial rasters (\pkg{terra}, \pkg{dismo},
-WorldClim); here we distil the statistical core so it runs without GIS layers.
+can occur. Statistically it is a \emph{binomial regression} — the GLM of
+Chapter~\ref{ch:glm} — whose response is presence/absence (or presence/background) and
+whose predictors are climate variables. The fitted surface, projected onto geography,
+becomes a suitability map. The full classroom pipeline uses spatial rasters
+(\pkg{terra}, \pkg{dismo}, WorldClim); here we distil the statistical core so it runs
+without GIS layers. The two course sessions divide the material the way the practice
+divides: the first fits a model, the second asks whether it is worth anything.
+
+\section{Fitting the model}
+Each site is a point in the multivariate space of climate variables — the data matrix of
+Chapter~\ref{ch:matrix} again — and the model is a response surface over that space.
+What makes the problem ecological rather than merely statistical is that the surface is
+then read back into \emph{geographic} space, where a climatically suitable site may still
+be empty because the species never reached it or cannot persist there.
 
 \begin{lstlisting}
 occ  <- get_data("hanta")               # Sp (0/1), bio_1, bio_12
 enm2 <- glm(Sp ~ bio_1 + bio_12, data = occ, family = binomial)
 enmq <- glm(Sp ~ poly(bio_1, 2) + bio_12, data = occ, family = binomial)
-AIC(enm2, enmq)                         # does a hump-shaped temperature response help?
+AIC(enm1, enm2, enmq)                   # does a hump-shaped temperature response help?
 \end{lstlisting}
 
 \begin{lstlisting}[style=rout]
-Detections: 500 of 5627 sites
+Detections: 500 of 5627 sites (prevalence = 0.089)
 
 AIC (linear1, linear2, quadratic):
      df      AIC
@@ -1640,44 +1819,113 @@ enm1  2 2509.565
 enm2  3 2334.003
 enmq  4 2257.712
 
-Coefficients (bio_1 + bio_12):
-(Intercept)       bio_1      bio_12
-   -5.05879     0.39026    -0.00242
-
-Training AUC (bio_1 + bio_12): 0.901     # good discrimination (0.5 = random, 1 = perfect)
+Likelihood-ratio test, additive vs. quadratic in bio_1:
+  Resid. Df Resid. Dev Df Deviance  Pr(>Chi)
+1      5624     2328.0
+2      5623     2249.7  1   78.291 < 2.2e-16 ***
 \end{lstlisting}
 
 Read the AIC column first, because it settles a modelling question rather than merely
 ranking three fits. Adding precipitation to a temperature-only model buys $176$ AIC units,
-and adding a \emph{quadratic} temperature term buys a further $76$ — so the response to
-temperature is not monotone but hump-shaped, which is what a niche ought to look like:
-suitability rises to an optimum and falls away on both sides. The additive model's
-coefficients are shown above for interpretability, and they tell a coarser version of the
-same story — positive \code{bio\_1}, so warmer sites are more suitable over the observed
-range, with a small negative \code{bio\_12} penalising the wettest ones. An AUC of $0.901$
-says the model ranks a random presence above a random absence about $90\%$ of the time.
+and adding a \emph{quadratic} temperature term buys a further $76$, with a likelihood-ratio
+test that is unambiguous. So the response to temperature is not monotone but hump-shaped,
+which is what a niche ought to look like: suitability rises to an optimum and falls away
+on both sides. A purely additive model would have reported ``warmer is better'' over the
+observed range and hidden the optimum entirely.
 
-Figure~\ref{fig:enm} shows the two standard ENM outputs: a \emph{response curve} (how
-suitability varies along one predictor) and a \emph{suitability surface} in environmental
-space, with observed detections overlaid.
+Figure~\ref{fig:enmfit} shows the two standard outputs of this stage: a \emph{response
+curve} — one predictor varied with the others held at their median, so a slice through the
+surface rather than the surface — and the \emph{suitability surface} itself over the two
+bioclimatic axes.
 
 \begin{figure}[htbp]\centering
-  \includegraphics[width=\linewidth]{22_enm.png}
-  \caption{Ecological niche model. Left: response curve of presence probability against
-  temperature. Right: the fitted suitability surface over the two bioclimatic axes;
-  detections (points) fall in the high-suitability region.}
-  \label{fig:enm}
+  \includegraphics[width=\linewidth]{22_enm_response.png}\\[6pt]
+  \includegraphics[width=0.7\linewidth]{22_enm_surface.png}
+  \caption{Fitting stage. Top: response curves for the additive and quadratic models —
+  only the second has an optimum. Bottom: the fitted suitability surface over
+  temperature and precipitation, with detections overlaid.}
+  \label{fig:enmfit}
 \end{figure}
+
+\section{Evaluation and transfer}
+Training AUC is measured on the very points that chose the coefficients, so it is biased
+upward. $k$-fold cross-validation refits the model $k$ times and scores each held-out
+fold.
+
+\begin{lstlisting}
+fold <- sample(rep_len(seq_len(5), nrow(occ)))
+cv   <- vapply(1:5, function(i) {
+  m <- glm(form, data = occ[fold != i, ], family = binomial)
+  auc(predict(m, occ[fold == i, ], type = "response"), occ$Sp[fold == i])
+}, numeric(1))
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+Training AUC (optimistic): 0.898
+5-fold CV AUC per fold: 0.883, 0.898, 0.896, 0.913, 0.9
+  mean = 0.898  sd = 0.011
+
+Threshold rules (threshold, then consequences):
+                             threshold sensitivity specificity omission  area
+minimum training presence        0.002       1.000       0.289    0.000 0.737
+10th percentile presence         0.069       0.902       0.702    0.098 0.351
+max sensitivity+specificity      0.085       0.864       0.803    0.136 0.256
+\end{lstlisting}
+
+Cross-validation barely moves the AUC here, which is reassuring but not decisive: the
+folds are \emph{random}, so a held-out site usually has a training site a few kilometres
+away. With spatially autocorrelated predictors that makes the test easy. A model intended
+for projection should be validated on spatially blocked partitions, where whole contiguous
+regions are held out at once.
+
+The threshold table is the part students most often skip and reviewers most often catch.
+Nothing in a fitted probability says where ``suitable'' begins, and the three standard
+rules trade the same currency in opposite directions: minimum-training-presence admits
+every known detection (omission $=0$) but calls $74\%$ of sites suitable, while the
+$10$th-percentile rule discards the most marginal tenth of records — often the
+misidentified or mis-georeferenced ones — and halves the predicted area. Neither is
+correct in the abstract; what is not defensible is failing to say which was used.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{23_enm_thresholds.png}
+  \caption{Evaluation stage. Left: the ROC curve summarised by AUC. Right: predicted area
+  as a function of the threshold, with the three standard rules marked — the same model
+  yields a quarter or three-quarters of the landscape depending on that one choice.}
+  \label{fig:enmthr}
+\end{figure}
+
+Projection is where niche models earn their keep and fail most quietly. Shifting
+temperature by $+3^\circ$C and re-scoring the same sites raises the suitable fraction from
+$0.35$ to $0.57$ at a fixed threshold. Before quoting that number, check how much of it is
+\emph{extrapolation}: a prediction outside the training envelope of any predictor is an
+extrapolation, and a quadratic term extrapolates violently. Flagging those points is the
+idea behind the multivariate environmental similarity surface (MESS).
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.78\linewidth]{23_enm_transfer.png}
+  \caption{Transfer stage. Current suitability against a $+3^\circ$C scenario, with
+  points falling outside the training range of the predictors marked separately. Those
+  are the predictions the model has no evidence for.}
+  \label{fig:enmtransfer}
+\end{figure}
+
+\begin{keybox}
+An ENM is a binomial response surface over environmental predictors. Three numbers must
+accompany any map made from one: a cross-validated (preferably spatially blocked) AUC,
+the threshold rule used to binarize it, and the fraction of the projection that lies
+outside the training envelope.
+\end{keybox}
 
 \begin{pitfall}
 Presence-only data has no true absences; the ``0''s are usually \emph{background} points.
 Treating background as genuine absence biases prevalence and inflates apparent
-performance. And AUC computed on the training data (as here, for illustration) is
-optimistic — always report AUC on spatially independent held-out data.
+performance. And an AUC computed on training data is optimistic — the number to report is
+the held-out one.
 \end{pitfall}
 
 % ===========================================================================
 \chapter{Presence--Absence Matrices}
+\label{ch:pam}
 % ===========================================================================
 A presence--absence matrix (PAM) records which species occur at which sites as a binary
 matrix — the discrete cousin of the community tables from Correspondence Analysis. Its
@@ -1711,7 +1959,7 @@ The matrix product $\mathbf{P}\mathbf{P}^{\!\top}$ counts \emph{shared species} 
 every pair of sites, and $\mathbf{P}^{\!\top}\mathbf{P}$ counts \emph{co-occurrences}
 between every pair of species. From these two products fall out $\beta$-diversity, dispersion
 fields, and range--diversity plots — the whole macroecology of the PAM is linear algebra
-on a binary matrix, closing the loop back to Chapter~1.
+on a binary matrix, closing the loop back to Chapter~\ref{ch:matrix}.
 \end{keybox}
 
 % ###########################################################################
@@ -1775,13 +2023,17 @@ figures of $0.79$ accuracy and $\kappa=0.64$, and the flower-classification accu
 $0.998$ at a loss of $0.004$ are all recorded outputs of those analyses.
 
 \chapter{Notes on the revision}
-This edition follows the revised Fall-2026 schedule: Principal Coordinate Analysis is
-folded into the PCA chapter (Chapter~3); the standalone visualization and \pkg{ggplot2}
-sessions are retired (their techniques are used throughout); and four machine-learning
-chapters (9--12) are added, adapted from the author's graduate ML course. Bugs in the
-original scripts were fixed in passing — an undefined \code{d\_euc2} in the dissimilarity
-script, a \code{Qroo3}/\code{QRoo3} name clash in the MDS-biplot script, and pervasive
-hard-coded absolute paths — and every script now runs unmodified on any platform.
+This edition follows the revised Fall-2026 schedule chapter for chapter. Principal
+Coordinate Analysis is folded into the PCA chapter (Chapter~\ref{ch:pca}); the standalone
+\pkg{ggplot2} session is retired, while the two visualization sessions are kept and
+rewritten as Chapter~\ref{ch:viz}; Exploratory Factor Analysis (Chapter~\ref{ch:fa}) is
+given a session of its own; Ecological Niche Modeling keeps its two sessions, which are
+now the two sections of Chapter~\ref{ch:enm}; and four machine-learning chapters
+(Chapters~\ref{ch:supml}--\ref{ch:llm}) are added, adapted from the author's graduate ML
+course. Bugs in the original scripts were fixed in passing — an undefined
+\code{d\_euc2} in the dissimilarity script, a \code{Qroo3}/\code{QRoo3} name clash in the
+MDS-biplot script, and pervasive hard-coded absolute paths — and every script now runs
+unmodified on any platform.
 
 \vspace{1em}
 {\small\itshape Selected references.} Gower (1966) \emph{Biometrika}; Legendre \&

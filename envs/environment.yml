@@ -82,6 +82,8 @@ dependencies:
   - r-ellipse
   - r-nnet
   - r-cluster
+  - r-scatterplot3d          # 3-D scatter, visualization session II
+  - r-car                    # scatterplotMatrix, visualization session II
   - r-permute
   - r-rtsne
   - r-uwot

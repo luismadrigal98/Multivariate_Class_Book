@@ -77,6 +77,17 @@ need <- function(...) {
     suppressPackageStartupMessages(library(p, character.only = TRUE))))
 }
 
+## ---- evaluation helper -----------------------------------------------------
+##  auc(p, y): area under the ROC curve from predicted scores `p` and binary
+##  outcomes `y`, computed from the rank-sum identity AUC = (W - n1(n1+1)/2) /
+##  (n1 n0) so no extra package is needed. Shared by the two ENM sessions.
+auc <- function(p, y) {
+  r  <- rank(p)
+  n1 <- sum(y == 1); n0 <- sum(y == 0)
+  if (n1 == 0 || n0 == 0) return(NA_real_)
+  (sum(r[y == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+
 ## ============================================================================
 ##  get_data(): the real-file-or-fallback loader
 ## ============================================================================

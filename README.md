@@ -12,8 +12,12 @@ revision, ML integration, verification, and the accompanying book by
 MS_LJMR/
 ├── R/            revised, portable R scripts (no setwd(), no x11())
 │   ├── 00_utils.R          shared helpers + get_data() (real-file-or-fallback)
+│   ├── 02_Visualization.R  R fundamentals + base graphics      (session Sep 3)
+│   ├── 03_VisualizationII.R 3-D scatter + scatterplot matrices (session Sep 8)
 │   ├── 05_Clustering.R     k-means + hierarchical
 │   ├── 09_PCA.R            PCA I–III with PCoA folded in
+│   ├── 22_ENM_I.R          niche model: fitting
+│   ├── 23_ENM_II.R         niche model: evaluation & transfer
 │   ├── 21_NN_DL.R          neural nets (nnet track + keras template)  [NEW]
 │   ├── 25_SupervisedML.R   trees / RF / boosting + caret              [NEW]
 │   ├── 26_UnsupervisedML.R PCA vs t-SNE vs UMAP                       [NEW]
@@ -58,7 +62,7 @@ moment you add the real files — no path editing, ever.
   real `ade4::doubs` on any machine with `ade4` installed.
 - **Frozen demo still in use:** `pam` only — no real file of that name exists.
 
-All 19 scripts run against the real data. Three loader issues were fixed to get there:
+All 21 scripts run against the real data. Three loader issues were fixed to get there:
 
 - `Limenitis_archippus.csv` is a **headerless** 399 × 500 grid, so the generic
   `read.csv(..., header = TRUE)` branch was eating its first row as column names and
@@ -71,7 +75,7 @@ All 19 scripts run against the real data. Three loader issues were fixed to get 
   table is incomplete, so `05_Clustering.R` aggregates with `na.rm = TRUE`, and the
   generator plants NAs so the simulated path exercises the same handling.
 - `hanta` was never mapped to a real file even though `hanta_virtual.csv` carries exactly
-  the `Sp, bio_1, bio_12` columns `22_ENM.R` expects. Now mapped: 5627 sites instead of a
+  the `Sp, bio_1, bio_12` columns the ENM scripts expect. Now mapped: 5627 sites instead of a
   400-row demo.
 
 Four fallback generators (`butterflies`, `europe`, `countries_live`, `neotoma`) still
@@ -121,7 +125,10 @@ companion scripts in `R/`.
 ## What changed vs. the originals
 
 - Removed hard-coded `setwd()` and Windows-only `x11()`; portable `open_dev()`/`with_fig()`.
-- Folded PCoA into the PCA arc; retired standalone visualization/ggplot2 sessions.
+- Folded PCoA into the PCA arc; retired the standalone ggplot2 session. The two
+  visualization sessions are kept and rewritten (`02_Visualization.R`,
+  `03_VisualizationII.R`), now built around the point the rest of the book depends on:
+  direct display runs out at about four variables, which is what ordination is for.
 - Added four ML chapters. These now describe the actual `UnitCART`, `UnitCARET` and
   `UnitNN` analyses — anuran calls, AVONET birds, CRISPR/healthcare/flowers — with their
   real recorded results, rather than re-running everything on `iris`.
@@ -129,4 +136,40 @@ companion scripts in `R/`.
   (k-means and Ward objectives, Kruskal stress, χ² decomposition in CA, NMF multiplicative
   updates, recursive partitioning and cost-complexity pruning, attention).
 - Fixed original bugs: undefined `d_euc2` (dissimilarities), `Qroo3`/`QRoo3` clash (MDS biplot).
+- Split the single ENM script back into the two scheduled sessions: `22_ENM_I.R`
+  (fitting) and `23_ENM_II.R` (cross-validation, thresholds, transfer and
+  extrapolation checks), replacing the original's raster-download pipeline.
+- Fixed the book's stale cross-references (four chapters were cited by the wrong
+  number); every chapter now carries a `\label` and is cited with `\ref`.
+
+## Schedule alignment
+
+The code base, the book and the Fall-2026 schedule are kept in one-to-one correspondence.
+Scripts are named for the sessions that use them, and where the revision consolidated
+several original scripts into one, the schedule points at the relevant section:
+
+| Session(s) | Script | Book |
+|---|---|---|
+| Q and R views (Sep 1) | `01_Dissimilarities.R` | Ch. 1 |
+| Visualization I, II (Sep 3, 8) | `02_Visualization.R`, `03_VisualizationII.R` | Ch. 2 |
+| Linear Algebra II, III (Sep 24, 29) | `07_LinearAlgebra.R`, `08_SVD.R` | Ch. 3 |
+| PCA I–III (Oct 1, 6, 8) | `09_PCA.R` | Ch. 4 |
+| Correspondence Analysis (Oct 15) | `14_CorrespondenceAnalysis.R` | Ch. 5 |
+| MDS I, II (Oct 22, 27) | `15_MDS.R` | Ch. 6 |
+| Non-negative factoring (Oct 29) | `17_NMF.R` | Ch. 7 |
+| Factor Analysis (Nov 3) | `16_FactorAnalysis.R` | Ch. 8 |
+| Clustering (Sep 10, 15) | `05_Clustering.R` | Ch. 9 |
+| Discriminant Analysis (Nov 5) | `18_DiscriminantAnalysis.R` | Ch. 10 |
+| Multivariate Regression (Nov 10) | `19_GLM.R` | Ch. 11 |
+| Canonical Correlations (Nov 12) | `20_CanonicalCorrelation.R` | Ch. 12 |
+| Supervised ML (Nov 17) | `25_SupervisedML.R` | Ch. 13 |
+| Unsupervised ML (Nov 19) | `26_UnsupervisedML.R` | Ch. 14 |
+| Neural nets (Nov 24) | `21_NN_DL.R` | Ch. 15 |
+| Large language models (Dec 1) | `27_LLM_Embeddings.R` | Ch. 16 |
+| ENM I, II (Dec 3, 8) | `22_ENM_I.R`, `23_ENM_II.R` | Ch. 17 (§1, §2) |
+| Presence–absence matrices (Dec 10) | `24_PAMs.R` | Ch. 18 |
+
+The book's part structure is thematic and therefore does not follow the calendar order;
+the mapping above is the authoritative correspondence.
+
 # Multivariate_Class_Book

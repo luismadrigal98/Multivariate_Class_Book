@@ -19,8 +19,29 @@
 ##
 ##  Run:  source("R/00_utils.R"); source("R/09_PCA.R")
 ## ============================================================================
-source_utils <- function() if (!exists("get_data")) source(file.path("R","00_utils.R"))
-source_utils()
+## ---------------------------------------------------------------------------
+##  STANDALONE USE (no repository needed)
+##  ---------------------------------------------------------------------------
+##  As shipped, the source() line below borrows three helpers from the course
+##  repository: get_data() (loads a data set), need() (loads packages) and
+##  with_fig() (opens a plot device). To run this script entirely on its own,
+##  delete that line and uncomment the block below. Nothing else changes.
+##
+##  The standalone with_fig() just draws each figure to the screen, one after
+##  the other. To save them as files instead, replace its body with
+##      png(paste0(name, ".png")); on.exit(dev.off()); force(expr)
+##
+##  Files to keep next to this script: none — the data sets used here ship with R itself
+##
+# need <- function(...) invisible(lapply(c(...), function(p) {
+#   if (!requireNamespace(p, quietly = TRUE))
+#     stop("This session needs: install.packages(\"", p, "\")", call. = FALSE)
+#   library(p, character.only = TRUE)
+# }))
+# with_fig <- function(name, expr, ...) invisible(force(expr))   # draw on screen
+# get_data <- function(name) { utils::data("iris");   iris }
+## ---------------------------------------------------------------------------
+if (!exists("get_data")) source(file.path("R", "00_utils.R"))
 need("MASS")                                   # base + MASS are enough here
 
 ## ---- 1. Data ---------------------------------------------------------------
