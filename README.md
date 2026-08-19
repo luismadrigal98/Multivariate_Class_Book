@@ -172,4 +172,34 @@ several original scripts into one, the schedule points at the relevant section:
 The book's part structure is thematic and therefore does not follow the calendar order;
 the mapping above is the authoritative correspondence.
 
+## Handing out single scripts
+
+Every script in `R/` runs two ways. As shipped it borrows `get_data()`, `need()` and
+`with_fig()` from `R/00_utils.R`. Each also carries a commented-out **STANDALONE USE**
+block near the top: delete the `source(...)` line, uncomment the block, and the script
+runs on its own in any directory with no repository at all. Nothing else in the script
+changes, and the standalone path was verified to produce byte-identical output to the
+repository path for all 21 scripts.
+
+The block names the data file to hand out with the script:
+
+| Script | Ship alongside |
+|---|---|
+| `01_Dissimilarities.R`, `02_Visualization.R`, `09_PCA.R`, `21_NN_DL.R`, `25_SupervisedML.R` | nothing — `iris` ships with R |
+| `15_MDS.R` | nothing — `mtcars` ships with R |
+| `07_LinearAlgebra.R`, `27_LLM_Embeddings.R` | nothing — the script builds its own data |
+| `14_CorrespondenceAnalysis.R`, `20_CanonicalCorrelation.R` | nothing — `doubs` comes from the `ade4` package |
+| `03_VisualizationII.R`, `05_Clustering.R` | `BiodivCountries.csv` |
+| `08_SVD.R` | `Limenitis_archippus.csv` |
+| `16_FactorAnalysis.R`, `18_DiscriminantAnalysis.R` | `taxon.csv` |
+| `17_NMF.R`, `26_UnsupervisedML.R` | `leukemiaExpressionSubset.rds` |
+| `19_GLM.R` | `speciesCrawley3.csv` |
+| `22_ENM_I.R`, `23_ENM_II.R` | `hanta_virtual.csv` |
+| `24_PAMs.R` | `pam.csv` (from `data/demo/`) |
+
+The standalone `with_fig()` draws each figure to the screen instead of writing a PNG,
+which is what a student running the script in RStudio wants; the block shows the
+one-line change that saves files instead.
+
+
 # Multivariate_Class_Book

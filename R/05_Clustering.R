@@ -32,7 +32,7 @@
 # need <- function(...) invisible(lapply(c(...), function(p) {
 #   if (!requireNamespace(p, quietly = TRUE))
 #     stop("This session needs: install.packages(\"", p, "\")", call. = FALSE)
-#   library(p, character.only = TRUE)
+#   suppressPackageStartupMessages(library(p, character.only = TRUE))
 # }))
 # with_fig <- function(name, expr, ...) invisible(force(expr))   # draw on screen
 # get_data <- function(name) switch(name,

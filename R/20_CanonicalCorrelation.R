@@ -25,7 +25,7 @@
 # need <- function(...) invisible(lapply(c(...), function(p) {
 #   if (!requireNamespace(p, quietly = TRUE))
 #     stop("This session needs: install.packages(\"", p, "\")", call. = FALSE)
-#   library(p, character.only = TRUE)
+#   suppressPackageStartupMessages(library(p, character.only = TRUE))
 # }))
 # with_fig <- function(name, expr, ...) invisible(force(expr))   # draw on screen
 # get_data <- function(name) { utils::data("doubs", package = "ade4")
@@ -40,6 +40,7 @@ Y     <- doubs$fish[keep, colSums(doubs$fish[keep, ]) > 0]
 X     <- scale(doubs$env[keep, ])
 
 ## ---- Canonical correlation: symmetric association between two tables -------
+set.seed(1998)                     # CCorA and anova.cca below both permute
 cca_sym <- vegan::CCorA(scale(Y), X, permutations = 999)
 cat("Canonical correlation (CCorA):\n")
 cat("  Pillai trace p (permutation) =", cca_sym$p.perm, "\n")

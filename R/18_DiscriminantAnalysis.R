@@ -24,7 +24,7 @@
 # need <- function(...) invisible(lapply(c(...), function(p) {
 #   if (!requireNamespace(p, quietly = TRUE))
 #     stop("This session needs: install.packages(\"", p, "\")", call. = FALSE)
-#   library(p, character.only = TRUE)
+#   suppressPackageStartupMessages(library(p, character.only = TRUE))
 # }))
 # with_fig <- function(name, expr, ...) invisible(force(expr))   # draw on screen
 # get_data <- function(name) read.csv("taxon.csv", stringsAsFactors = TRUE)
@@ -38,6 +38,7 @@ taxon$Taxon <- factor(taxon$Taxon)
 ## ---- check the LDA assumption of equal covariances (Anderson's test) -------
 d   <- vegan::vegdist(taxon[, -1], method = "euclidean")
 bd  <- vegan::betadisper(d, taxon$Taxon)
+set.seed(1998)                     # permutest() is a permutation test: seed it
 cat("Homogeneity of dispersions (permutation test):\n")
 print(vegan::permutest(bd)$tab[1, ])
 
