@@ -192,7 +192,7 @@ The block names the data file to hand out with the script:
 
 | Script | Ship alongside |
 |---|---|
-| `01_Dissimilarities.R`, `02_Visualization.R`, `07_PCA.R`, `17_NN_DL.R`, `15_SupervisedML.R` | nothing — `iris` ships with R |
+| `01_Dissimilarities.R`, `02_Visualization.R`, `07_PCA.R`, `15_SupervisedML.R`, `17_NN_DL.R` | nothing — `iris` ships with R |
 | `09_MDS.R` | nothing — `mtcars` ships with R |
 | `05_LinearAlgebra.R`, `18_LLM_Embeddings.R` | nothing — the script builds its own data |
 | `08_CorrespondenceAnalysis.R`, `14_CanonicalCorrelation.R` | nothing — `doubs` comes from the `ade4` package |
