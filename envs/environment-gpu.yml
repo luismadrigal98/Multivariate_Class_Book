@@ -80,6 +80,24 @@ dependencies:
   - r-uwot
   - r-nmf
 
+  # ---- packages the restored classroom sections use --------------------------
+  - r-pvclust                # bootstrap support on dendrograms (session 04)
+  - r-ape                    # fan/cladogram layouts, pcoa (04, 07)
+  - r-maps                   # simple basemaps, replaces the retired maptools
+  - r-nfactors               # parallel analysis / scree criteria (session 11)
+  - r-cca                    # matcor, img.matcor (session 14)
+  - r-lavaan                 # confirmatory factor analysis / SEM (session 11)
+  - r-terra                  # raster predictors for the ENM projection (19)
+  - r-raster                 # dismo still speaks raster (session 20)
+  - r-dismo                  # bioclim, mahal, bundled example layers (20)
+  - r-vcfr                   # read VCF for the genomic PCoA (session 07)
+  - r-adegenet               # genlight objects, glPca (session 07)
+  - bioconductor-biobase     # basismap/coefmap in NMF (session 10)
+  # Optional, guarded by has_pkg(): rgl needs a live OpenGL display, so it is
+  # only used in interactive sessions; BiplotGUI was archived from CRAN and has
+  # no conda build. Neither is required for any script to run.
+  - r-rgl
+
   - r-tidyverse
   - r-dplyr
   - r-ggplot2

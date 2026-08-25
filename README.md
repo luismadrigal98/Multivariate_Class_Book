@@ -79,9 +79,9 @@ All 21 scripts run against the real data. Three loader issues were fixed to get 
   the `Sp, bio_1, bio_12` columns the ENM scripts expect. Now mapped: 5627 sites instead of a
   400-row demo.
 
-Four fallback generators (`butterflies`, `europe`, `countries_live`, `neotoma`) still
-differ from their real files. No current script uses them; the mismatches are documented
-in a comment block in `R/00_utils.R` rather than fixed blind.
+Every fallback generator now emits its real file's column names, including
+`butterflies`, `europe`, `countries_live` and `neotoma` — which the restored teaching
+sections do use, so the earlier "no script needs them" exemption no longer applied.
 
 ## Environment
 
@@ -96,6 +96,39 @@ R -e 'library(tensorflow); tf$constant("ok")'    # verifies R -> Python -> TF
 
 See `envs/README.md` for the GPU variant and for why the keras/tensorflow versions are
 pinned together.
+
+## Teaching from the scripts
+
+Figures go wherever the session is: **on screen when you are working
+interactively, PNG files under `figs/` when running in batch**. Inside RStudio
+"on screen" means the Plot pane, so figures stack up in the plot history and you
+can page back through them mid-class — no separate window opens in front of the
+projector. Three options control it:
+
+```r
+options(msljmr.device    = "auto")   # "auto" | "screen" | "png"   (default auto)
+options(msljmr.save_figs = TRUE)     # screen mode: also write figs/<name>.png
+options(msljmr.pause     = TRUE)     # wait for <Enter> between figures
+```
+
+`with_fig()` saves and restores `par()` around every figure, so a
+`par(mfrow = c(1, 2))` set for one plot cannot leak into the next one on a shared
+device. Note that an `on.exit()` written *inside* a `with_fig({ ... })` block does
+**not** do this — the block is a promise, so its `on.exit` registers against the
+caller's frame and never fires.
+
+Sections that need a package which may be missing, is no longer on CRAN, or opens
+an interactive window are wrapped in `has_pkg()`:
+
+```r
+if (interactive() && has_pkg("rgl")) { ...3-D you can drag... }
+else skip_note("rotatable 3-D view", "rgl")
+```
+
+so a demo runs live on a machine that has the package and prints one line
+everywhere else, instead of aborting halfway through a session. `rgl`,
+`BiplotGUI`, `lavaan`, `Biobase` and the `terra`/`dismo` raster work are all
+guarded this way.
 
 ## Reproducing
 
@@ -136,7 +169,20 @@ companion scripts in `R/`.
 - Added derivations to the chapters that previously stated results without them
   (k-means and Ward objectives, Kruskal stress, χ² decomposition in CA, NMF multiplicative
   updates, recursive partitioning and cost-complexity pruning, attention).
-- Fixed original bugs: undefined `d_euc2` (dissimilarities), `Qroo3`/`QRoo3` clash (MDS biplot).
+- Fixed original bugs: undefined `d_euc2` (dissimilarities), `Qroo3`/`QRoo3` clash (MDS
+  biplot), `iiE`/`jjE` computed but `ii`/`jj` indexed and Bray-Curtis panels drawing the
+  Euclidean matrix (dissimilarities), `rot(35)`/`rot(45)` documented as degrees but passed
+  to `cos`/`sin` as radians (linear algebra), an `AIC()` call naming a model that was never
+  created (GLM), and a lattice `dotplot()` never printed so its figure was silently never
+  written (supervised ML).
+- Restored the classroom material the first revision had cut: the code base carries ~2900
+  executable lines against ~670 before. Both variants of each original session were merged,
+  the `ggplot2` session folded into Visualization II, and the two PCoA sessions folded into
+  the PCA chapter, per the schedule.
+- Replaced material that could not run offline with equivalents that can: `maptools` →
+  `maps`, WorldClim downloads → the rasters bundled with `dismo`, a live GBIF query → the
+  messy `acaule.csv` that ships with `dismo`, `terra::distance(lonlat = TRUE)` → a haversine
+  helper. The network versions are kept as commented recipes beside them.
 - Split the single ENM script back into the two scheduled sessions: `19_ENM_I.R`
   (fitting) and `20_ENM_II.R` (cross-validation, thresholds, transfer and
   extrapolation checks), replacing the original's raster-download pipeline.
@@ -203,6 +249,11 @@ The block names the data file to hand out with the script:
 | `13_GLM.R` | `speciesCrawley3.csv` |
 | `19_ENM_I.R`, `20_ENM_II.R` | `hanta_virtual.csv` |
 | `21_PAMs.R` | `pam.csv` (from `data/demo/`) |
+
+Two scripts also read a file directly rather than through `get_data()`:
+`02_Visualization.R` opens `iris.data.csv` to show `read.table` vs `read.csv`, and
+`19_ENM_I.R` opens `vars.tif` to project the niche model onto the continental USA.
+Both are listed in their own STANDALONE headers.
 
 The standalone `with_fig()` draws each figure to the screen instead of writing a PNG,
 which is what a student running the script in RStudio wants; the block shows the

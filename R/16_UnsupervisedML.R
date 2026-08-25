@@ -15,13 +15,15 @@
 ## ---------------------------------------------------------------------------
 ##  STANDALONE USE (no repository needed)
 ##  ---------------------------------------------------------------------------
-##  As shipped, the source() line below borrows three helpers from the course
-##  repository: get_data() (loads a data set), need() (loads packages) and
-##  with_fig() (opens a plot device). To run this script entirely on its own,
-##  delete that line and uncomment the block below. Nothing else changes.
+##  As shipped, the source() line below borrows a few helpers from the course
+##  repository: get_data() (loads a data set), need() (loads packages),
+##  with_fig() (opens a plot device) and has_pkg()/skip_note() (let an optional
+##  section be skipped rather than crash). To run this script entirely on its
+##  own, delete that line and uncomment the block below. Nothing else changes.
 ##
-##  The standalone with_fig() just draws each figure to the screen, one after
-##  the other. To save them as files instead, replace its body with
+##  The standalone with_fig() draws each figure to the current device -- inside
+##  RStudio that is the Plot pane, so figures accumulate in the plot history.
+##  To save them as files instead, replace its body with
 ##      png(paste0(name, ".png")); on.exit(dev.off()); force(expr)
 ##
 ##  Files to keep next to this script: leukemiaExpressionSubset.rds
@@ -31,7 +33,17 @@
 #     stop("This session needs: install.packages(\"", p, "\")", call. = FALSE)
 #   suppressPackageStartupMessages(library(p, character.only = TRUE))
 # }))
-# with_fig <- function(name, expr, ...) invisible(force(expr))   # draw on screen
+# with_fig <- function(name, expr, ...) {          # draw on the current device;
+#   op <- par(no.readonly = TRUE); on.exit(par(op))  # in RStudio that is the Plot pane
+#   invisible(force(expr))
+# }
+# has_pkg <- function(...) all(vapply(c(...), requireNamespace, logical(1), quietly = TRUE))
+# skip_note <- function(what, pkgs) {
+#   message("  [skipped] ", what, " -- needs ", paste(pkgs, collapse = ", "),
+#           ":  install.packages(c(",
+#           paste(sprintf('"%s"', pkgs), collapse = ", "), "))")
+#   invisible(FALSE)
+# }
 # get_data <- function(name) readRDS("leukemiaExpressionSubset.rds")
 ## ---------------------------------------------------------------------------
 if (!exists("get_data")) source(file.path("R", "00_utils.R"))
@@ -57,7 +69,7 @@ um <- uwot::umap(X, n_neighbors = 15, min_dist = 0.1, n_components = 2)
 
 ## ---- Compare the three embeddings ------------------------------------------
 with_fig("16_embeddings", {
-  op <- par(mfrow = c(1, 3), mar = c(4, 4, 3, 1)); on.exit(par(op))
+  par(mfrow = c(1, 3), mar = c(4, 4, 3, 1))
   plot(pc$x[, 1:2], col = cols, pch = 19, main = "PCA (linear)",
        xlab = sprintf("PC1 (%.0f%%)", 100*ve[1]), ylab = "PC2")
   plot(ts$Y, col = cols, pch = 19, main = "t-SNE", xlab = "dim 1", ylab = "dim 2")

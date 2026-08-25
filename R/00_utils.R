@@ -41,24 +41,84 @@ fig_dir <- function() {
 }
 
 ## ---- graphics device -------------------------------------------------------
-##  open_dev("name", w, h): on an interactive session opens a screen device;
-##  in batch (Rscript) writes figs/name.png. Call dev.off() when done, or use
-##  with_fig().
-open_dev <- function(name = "plot", width = 7, height = 6, res = 150) {
-  if (interactive()) {
-    grDevices::dev.new(width = width, height = height, noRStudioGD = TRUE)
-  } else {
+##  Where a figure goes is decided by one option, `msljmr.device`:
+##
+##    "auto"   (default) screen when the session is interactive, PNG under
+##             Rscript / R CMD BATCH
+##    "screen" always draw on the CURRENT device. Inside RStudio that is the
+##             Plot pane, so figures pile up in the plot history and you can
+##             page back and forth through them while teaching
+##    "png"    always write figs/<name>.png
+##
+##  Set it for a whole session with options(msljmr.device = "png"), or per
+##  figure with with_fig(..., device = "png").
+##
+##  Screen mode deliberately opens nothing: the plotting call itself brings up
+##  the default device, which is RStudioGD inside RStudio and X11/quartz/windows
+##  elsewhere. An earlier version called dev.new(noRStudioGD = TRUE), which is
+##  exactly the flag that throws a separate window in front of the class.
+##
+##  Two more options, both off by default:
+##    msljmr.save_figs  TRUE  -> in screen mode ALSO copy each figure to figs/
+##    msljmr.pause      TRUE  -> wait for <Enter> between figures, for live demos
+
+in_rstudio <- function()
+  identical(Sys.getenv("RSTUDIO"), "1") || identical(.Platform$GUI, "RStudio")
+
+.fig_mode <- function(device = NULL) {
+  mode <- device %||% getOption("msljmr.device", "auto")
+  if (identical(mode, "auto")) mode <- if (interactive()) "screen" else "png"
+  if (!mode %in% c("screen", "png"))
+    stop("msljmr.device must be \"auto\", \"screen\" or \"png\"", call. = FALSE)
+  mode
+}
+
+##  open_dev("name", w, h): starts a figure and returns the mode it used, so the
+##  caller knows whether it owns a device that must be closed.
+open_dev <- function(name = "plot", width = 7, height = 6, res = 150,
+                     device = NULL) {
+  mode <- .fig_mode(device)
+  if (mode == "png") {
     grDevices::png(file.path(fig_dir(), paste0(name, ".png")),
                    width = width, height = height, units = "in", res = res)
+  } else if (!in_rstudio() && grDevices::dev.cur() == 1L) {
+    ## plain console with no device yet: give it a window of the right shape
+    grDevices::dev.new(width = width, height = height)
   }
-  invisible(NULL)
+  invisible(mode)
 }
 
 ## convenience wrapper: with_fig("scree", { plot(...) })
-with_fig <- function(name, expr, width = 7, height = 6, res = 150) {
-  open_dev(name, width, height, res)
-  on.exit(if (!interactive()) grDevices::dev.off())
+##
+##  with_fig() also saves and restores par(). That matters in screen mode, where
+##  every figure shares one device: without it a par(mfrow = c(1, 2)) set for one
+##  figure would silently split the next one too. Note that an on.exit() written
+##  *inside* the { } block does NOT do this -- the block is a promise, so its
+##  on.exit registers against the caller's frame and never fires. Restore par
+##  here, once, rather than in each script.
+with_fig <- function(name, expr, width = 7, height = 6, res = 150,
+                     device = NULL) {
+  mode <- open_dev(name, width, height, res, device)
+  old  <- if (mode == "screen" && grDevices::dev.cur() != 1L)
+            graphics::par(no.readonly = TRUE) else NULL
+
+  on.exit({
+    if (mode == "png") grDevices::dev.off()
+    else if (!is.null(old)) try(graphics::par(old), silent = TRUE)
+  }, add = TRUE)
+
   force(expr)
+
+  if (mode == "screen") {
+    if (isTRUE(getOption("msljmr.save_figs", FALSE))) {
+      grDevices::dev.copy(grDevices::png,
+                          filename = file.path(fig_dir(), paste0(name, ".png")),
+                          width = width, height = height, units = "in", res = res)
+      grDevices::dev.off()
+    }
+    if (isTRUE(getOption("msljmr.pause", FALSE)) && interactive())
+      invisible(readline(paste0("[", name, "]  <Enter> for the next figure ")))
+  }
   invisible(NULL)
 }
 
@@ -75,6 +135,25 @@ need <- function(...) {
   }
   invisible(lapply(setdiff(pkgs, miss), function(p)
     suppressPackageStartupMessages(library(p, character.only = TRUE))))
+}
+
+## ---- optional-dependency guard ---------------------------------------------
+##  Several classroom sections need a package that may not be installed, is no
+##  longer on CRAN (maptools, BiplotGUI), needs a live network (WorldClim), or
+##  opens an interactive window (rgl). Those sections are wrapped in
+##
+##      if (has_pkg("rgl")) { ... } else skip_note("interactive 3-D", "rgl")
+##
+##  so the demo runs in class on a machine that has the package, and merely
+##  prints a note everywhere else instead of aborting halfway through a session.
+has_pkg <- function(...)
+  all(vapply(c(...), requireNamespace, logical(1), quietly = TRUE))
+
+skip_note <- function(what, pkgs) {
+  message("  [skipped] ", what, " -- needs ", paste(pkgs, collapse = ", "),
+          ":  install.packages(c(",
+          paste(sprintf('"%s"', pkgs), collapse = ", "), "))")
+  invisible(FALSE)
 }
 
 ## ---- evaluation helper -----------------------------------------------------
@@ -114,7 +193,11 @@ get_data <- function(name, seed = 1998, quiet = FALSE) {
     leukemia       = "leukemiaExpressionSubset.rds",
     limenitis      = "Limenitis_archippus.csv",
     neotoma        = "NeotomaMorphoEnvir.csv",
-    hanta          = "hanta_virtual.csv"
+    hanta          = "hanta_virtual.csv",
+    biodiv_pc      = "BiodiversityCountriesPCValues.csv",
+    biodiv_gv      = "BiodiversityCountriesBiGv.csv",
+    ssa_factor     = "BiodiversityCountriesSSAFactanal2.csv",
+    insatisf       = "Insatisf2.csv"
   )
 
   ## Datasets whose real file is a headerless numeric grid: no header row and no
@@ -189,6 +272,9 @@ get_data <- function(name, seed = 1998, quiet = FALSE) {
     doubs          = .sim_doubs(),
     neotoma        = .sim_neotoma(),
     hanta          = .sim_hanta(),
+    ssa_factor     = .sim_ssa_factor(),
+    biodiv_gv      = .sim_biodiv_gv(),
+    insatisf       = .sim_insatisf(),
     pam            = .sim_pam(),
     stop("Unknown dataset: ", name))
   attr(sim, "simulated") <- TRUE
@@ -200,68 +286,151 @@ get_data <- function(name, seed = 1998, quiet = FALSE) {
 ##  A fallback is only useful if a script written against it also runs against
 ##  the real file, so each generator should emit the REAL file's column names.
 ##  Verified aligned: taxon, crawley, biodiv, hanta, limenitis, leukemia.
-##  Known still divergent (no current script uses them, so they are documented
-##  rather than changed blind -- align before writing a session that needs one):
-##    butterflies    real: Genus, Sp, Name, Pattern, HD..PF
-##                   sim : Superfamily, Genus, Species, Pattern, HD..PF
-##    europe         real: City, Long, Lat          sim: City, lon, lat
-##    countries_live real: Country, living, climate, food, security,
-##                         hospitality, infrastructure
-##                   sim : Country, Cost, Health, Safety, Climate, Freedom
-##    neotoma        real: ID, sp, long, lat, No. cat, Code, d1..d8, ...
-##                   sim : sp, lon, lat, m1..m80, bio1..bio19
+##  All generators now emit the REAL files' column names, so a script written
+##  against a simulation runs unchanged on the classroom data. (Earlier editions
+##  left butterflies, europe, countries_live and neotoma divergent because no
+##  script used them; the restored teaching sections do, so they were aligned.)
 
-## Quintana Roo butterflies: species x (meta + 7 successional sites)
+## Quintana Roo butterflies: species x (taxonomy + wing pattern + 7 sites along
+## a successional gradient). Columns match ButterfliesQRoo2.csv exactly.
 .sim_butterflies <- function() {
   patterns <- c("Sand","BlackOrange","ShrubOrange","DarkCarpet","OpenContrast",
                 "BlackRed","SilentBand","Bark","CanopyOrange","Adelpha",
                 "CloseReflect","Tiger")
   sites <- c("HD","SD","GA","YA","MA","OA","PF")           # succession gradient
-  ns <- 60
-  species <- paste0("sp", sprintf("%02d", seq_len(ns)))
-  pat <- sample(patterns, ns, replace = TRUE)
-  ## a latent successional optimum per species drives a Poisson gradient
-  opt <- runif(ns, 1, 7)
+  ns    <- 128
+  genus <- paste0("Gen", sprintf("%02d", sample(30, ns, replace = TRUE)))
+  sp    <- paste0("sp", sprintf("%03d", seq_len(ns)))
+  opt   <- runif(ns, 1, 7)                     # latent successional optimum
   M <- sapply(seq_along(sites), function(k)
     rpois(ns, lambda = 6 * exp(-0.5 * (k - opt)^2)))
   colnames(M) <- sites
-  data.frame(Superfamily = "Nymphalidae", Genus = "Gen",
-             Species = species, Pattern = pat, M, stringsAsFactors = TRUE)
+  data.frame(Genus = genus, Sp = sp, Name = paste(genus, sp),
+             Pattern = sample(patterns, ns, replace = TRUE), M,
+             stringsAsFactors = TRUE)
 }
 
-## Biodiversity of countries: RegionCode + richness / area-corrected richness
-## (density) / governance / capacity.
-##
-## Column names and RegionCode levels mirror the real BiodivCountries.csv so
-## that a script written against the simulation runs unchanged on the real file.
-## The real table has no per-taxon "diversity index"; what it carries alongside
-## raw richness is Dens*Rich, richness per unit area. Earlier versions of this
-## generator invented tidier *Div names that exist in no real file, which is
-## exactly the mismatch that used to break 04_Clustering.R.
+## Biodiversity of countries: RegionCode plus the three variable blocks the
+## clustering session uses -- diversity, governance and scientific capacity.
+## Column names mirror BiodivCountries.csv exactly (62 columns in the real file;
+## the ones any script touches are reproduced here) so a script written against
+## the simulation runs unchanged on the classroom data.
 .sim_biodiv <- function() {
   regions <- c("APC","CAR","EECA","LAM","MENA","NAM","SSA","WEU")
-  n <- 186
-  reg <- sample(regions, n, replace = TRUE)
+  n    <- 186
+  reg  <- sample(regions, n, replace = TRUE)
   base <- match(reg, regions)
   rich <- function(mult) round(abs(rnorm(n, 50 * mult + 8 * base, 25)))
   dens <- function(mult) round(abs(rnorm(n, 5 * mult + 0.8 * base, 3)), 3)
-  gov  <- function() round(rnorm(n, 0, 1), 2)
+  gov  <- function(sd = 1) round(rnorm(n, 0, sd), 3)
+
   out <- data.frame(
+    ID = seq_len(n),
     Country    = paste0("C", sprintf("%03d", seq_len(n))),
     RegionCode = factor(reg),
+    ## --- diversity block ---
     AmphRich = rich(1.0), Rept_rich = rich(1.2),
     BirdRich = rich(3.0), MamsRich  = rich(1.5),
+    CountCentPlantDiv = rpois(n, 2 + base),
+    CountEcoregions   = rpois(n, 5 + base),
+    CountHotspots     = rpois(n, 1 + base / 2),
     DensAmphRich = dens(1.0), DensRept_rich = dens(1.2),
     DensBirdRich = dens(3.0), DensMamsRich  = dens(1.5),
-    VoiceAccount = gov(), Stability = gov(), GovEffect = gov(), RuleLaw = gov(),
-    Wealth = round(rlnorm(n, 9, 1)),
-    Capacity = round(rnorm(n, 50 + 5 * base, 15)),
+    ## --- governance block (World Bank WGI: mean and sd per indicator) ---
+    VA_Mean = gov(), VA_SD = abs(gov(.3)),
+    PS_Mean = gov(), PS_SD = abs(gov(.3)),
+    GE_Mean = gov(), GE_SD = abs(gov(.3)),
+    RL_Mean = gov(), RL_SD = abs(gov(.3)),
+    CC_Mean = gov(), CC_SD = abs(gov(.3)),
+    ## --- scientific-capacity block ---
+    PapersCapita        = round(rlnorm(n, -1 + base / 6, 1), 3),
+    GBIF_OwnToTotal     = round(runif(n), 3),
+    CountHerbaria       = rpois(n, 3 + base),
+    log10NmbSpc         = round(rnorm(n, 4 + base / 8, .6), 3),
+    InternetPenetration = round(runif(n, 5, 95), 2),
+    GDRE_Mean10Years    = round(abs(rnorm(n, .5 + base / 20, .4)), 3),
+    logGDP2010          = round(rnorm(n, 10 + base / 5, 1), 3),
+    logGDP2011          = round(rnorm(n, 10 + base / 5, 1), 3),
     stringsAsFactors = TRUE)
+
   ## the real file is not complete; imitate that so NA handling gets exercised
-  for (j in c("AmphRich","Rept_rich","BirdRich","MamsRich",
-              "DensAmphRich","DensRept_rich","DensBirdRich","DensMamsRich"))
+  for (j in c("AmphRich","Rept_rich","BirdRich","MamsRich","DensAmphRich",
+              "DensRept_rich","DensBirdRich","DensMamsRich","VA_Mean",
+              "PapersCapita","logGDP2010"))
     out[sample(n, 3), j] <- NA
   out
+}
+
+## Sub-Saharan Africa capacity/governance table used by the factor-analysis
+## session: 42 countries x 17 numeric indicators (plus a leading label column X).
+.sim_ssa_factor <- function() {
+  n <- 42
+  f <- function(k) matrix(rnorm(n * k), n, k)
+  ## three latent factors -- capacity, biodiversity density, governance --
+  ## so factanal() has something real to find
+  L <- f(3)
+  mk <- function(w, sd) round(as.vector(L %*% w) + rnorm(n, 0, sd), 3)
+  data.frame(
+    X = paste0("SSA", sprintf("%02d", seq_len(n))),
+    PapersCapita        = mk(c(1.0, 0, .2), .4),
+    GBIF_Total          = mk(c(0.9, 0, .1), .5),
+    CountHerbaria       = mk(c(0.8, 0, .1), .5),
+    CountGEFGrants      = mk(c(0.7, .2, .2), .5),
+    InternetPenetration = mk(c(0.8, 0, .4), .5),
+    CountEcoregions     = mk(c(0.1, .8, 0), .5),
+    DensAmphRich        = mk(c(0, 1.0, 0), .4),
+    DensRept_rich       = mk(c(0, 0.9, 0), .4),
+    DensBirdRich        = mk(c(0, 1.0, 0), .4),
+    DensMamsRich        = mk(c(0, 0.9, 0), .4),
+    VA_Mean             = mk(c(0, 0, 1.0), .3),
+    PS_Mean             = mk(c(0, 0, 0.9), .3),
+    GE_Mean             = mk(c(.3, 0, 0.9), .3),
+    RL_Mean             = mk(c(.2, 0, 1.0), .3),
+    CC_Mean             = mk(c(.1, 0, 0.9), .3),
+    logGDP2010          = mk(c(.9, 0, .3), .4),
+    logGDP2011          = mk(c(.9, 0, .3), .4),
+    stringsAsFactors = TRUE)
+}
+
+## US-states social indicators (the "Insatisf" table): 50 states x 9 numerics.
+.sim_insatisf <- function() {
+  n <- 50
+  L <- matrix(rnorm(n * 2), n, 2)
+  mk <- function(w, mu, sd) round(mu + as.vector(L %*% w) * sd, 3)
+  data.frame(
+    State = state.name[seq_len(n)],
+    Murder         = mk(c(1.0, .1),  7.8,  4.3),
+    Assault        = mk(c(1.0, .1), 170,   83),
+    UrbanPop       = mk(c(.2,  .9),  65,   14),
+    Rape           = mk(c(.8,  .3),  21,    9),
+    Unemploym      = mk(c(.6, -.4),  .06,  .02),
+    AllStudents    = mk(c(-.2, .7),  .70,  .09),
+    Disabilities   = mk(c(.5, -.2),  .30,  .06),
+    LimitedEnglish = mk(c(.1,  .8),  .36,  .12),
+    Poor           = mk(c(.9, -.2),  .40,  .10),
+    stringsAsFactors = TRUE)
+}
+
+## Biodiversity + governance, complete cases only (BiodiversityCountriesBiGv.csv):
+## the two-table set-up the canonical-correlation session needs.
+.sim_biodiv_gv <- function() {
+  regions <- c("APC","CAR","EECA","LAM","MENA","NAM","SSA","WEU")
+  n   <- 130
+  reg <- sample(regions, n, replace = TRUE)
+  k   <- match(reg, regions)
+  lat <- rnorm(n)                      # one latent axis both blocks respond to
+  data.frame(
+    RegionCode = factor(reg),
+    ISO3V10    = paste0("C", sprintf("%03d", seq_len(n))),
+    AmphRich   = round(abs(rnorm(n,  60 + 8 * k + 20 * lat, 25))),
+    Rept_rich  = round(abs(rnorm(n,  70 + 8 * k + 18 * lat, 25))),
+    BirdRich   = round(abs(rnorm(n, 200 + 9 * k + 40 * lat, 60))),
+    MamsRich   = round(abs(rnorm(n, 120 + 7 * k + 30 * lat, 40))),
+    VA_Mean    = round(rnorm(n, -0.2 * lat, 1), 3),
+    PS_Mean    = round(rnorm(n, -0.2 * lat, 1), 3),
+    GE_Mean    = round(rnorm(n, -0.3 * lat, 1), 3),
+    RL_Mean    = round(rnorm(n, -0.3 * lat, 1), 3),
+    stringsAsFactors = TRUE)
 }
 
 ## Crawley "taxon": 4 taxa x 30, seven morphometric variables (Gaussian blobs)
@@ -288,25 +457,29 @@ get_data <- function(name, seed = 1998, quiet = FALSE) {
   data.frame(Species, Biomass, Tmp, Precip, pH, Soil)
 }
 
-## 21 European cities (real public coordinates) for PCoA / geographic MDS
+## 21 European cities (real public coordinates); columns City, Long, Lat as in
+## CitiesEurope.csv.
 .sim_europe <- function() {
   data.frame(
     City = c("Athens","Barcelona","Berlin","Brussels","Dublin","Geneva",
              "Helsinki","Lisbon","London","Madrid","Milan","Munich","Oslo",
              "Paris","Prague","Rome","Stockholm","Vienna","Warsaw","Zurich","Hamburg"),
-    lon = c(23.73,2.17,13.40,4.35,-6.26,6.14,24.94,-9.14,-0.13,-3.70,9.19,11.58,
-            10.75,2.35,14.42,12.50,18.07,16.37,21.01,8.54,9.99),
-    lat = c(37.98,41.39,52.52,50.85,53.35,46.20,60.17,38.72,51.51,40.42,45.46,
-            48.14,59.91,48.86,50.08,41.90,59.33,48.21,52.23,47.38,53.55))
+    Long = c(23.73,2.17,13.40,4.35,-6.26,6.14,24.94,-9.14,-0.13,-3.70,9.19,11.58,
+             10.75,2.35,14.42,12.50,18.07,16.37,21.01,8.54,9.99),
+    Lat  = c(37.98,41.39,52.52,50.85,53.35,46.20,60.17,38.72,51.51,40.42,45.46,
+             48.14,59.91,48.86,50.08,41.90,59.33,48.21,52.23,47.38,53.55),
+    stringsAsFactors = TRUE)
 }
 
-## Ordinal liveability rankings (Q-mode ordinal example for NMDS)
+## Ordinal liveability rankings: 13 countries ranked on six criteria. Columns
+## match CountriesToLive.csv (living, climate, food, security, hospitality,
+## infrastructure), each a permutation of 1..13.
 .sim_countries_live <- function() {
   countries <- c("Norway","Switzerland","Canada","Germany","Japan","France",
                  "Spain","Portugal","Mexico","Brazil","India","Kenya","Vietnam")
-  crit <- c("Cost","Health","Safety","Climate","Freedom")
+  crit <- c("living","climate","food","security","hospitality","infrastructure")
   M <- sapply(crit, function(.) sample(seq_along(countries)))
-  data.frame(Country = countries, M)
+  data.frame(Country = countries, M, stringsAsFactors = TRUE)
 }
 
 ## Leukemia-like expression: genes x samples, 3 subtypes with block signatures
@@ -353,15 +526,25 @@ get_data <- function(name, seed = 1998, quiet = FALSE) {
   list(fish = as.data.frame(fish), env = env, xy = xy)
 }
 
-## Neotoma-like morphology + bioclim (for PCA parts/procrustes)
+## Neotoma-like table: 615 specimens, morphometrics + environment. Columns match
+## NeotomaMorphoEnvir.csv: ID, sp, long, lat, No..cat, Code, d1-d14 (dental),
+## v1-v28, m1-m14, L1-L20 (landmarks) and BIO1-BIO19 (bioclim).
 .sim_neotoma <- function() {
-  n <- 615; sp <- factor(sample(paste0("N", 1:15), n, TRUE))
-  base <- as.integer(sp)
-  morph <- sapply(1:80, function(j) rnorm(n, 10 + 0.2 * base, 2))
-  bio <- sapply(1:19, function(j) rnorm(n, 100 + 5 * base, 30))
-  colnames(morph) <- paste0("m", 1:80); colnames(bio) <- paste0("bio", 1:19)
-  data.frame(sp = sp, lon = runif(n, -115, -70), lat = runif(n, 20, 45),
-             morph, bio)
+  n  <- 615
+  sp <- factor(sample(paste0("N", 1:15), n, TRUE))
+  k  <- as.integer(sp)
+  blk <- function(pre, m, mu, sd) {
+    X <- sapply(seq_len(m), function(j) rnorm(n, mu + 0.2 * k, sd))
+    colnames(X) <- paste0(pre, seq_len(m)); X
+  }
+  bio <- sapply(1:19, function(j) rnorm(n, 100 + 5 * k, 30))
+  colnames(bio) <- paste0("BIO", 1:19)
+  data.frame(ID = seq_len(n), sp = sp,
+             long = runif(n, -115, -70), lat = runif(n, 20, 45),
+             `No..cat` = seq_len(n), Code = paste0("C", k),
+             blk("d", 14, 10, 2), blk("v", 28, 8, 1.5),
+             blk("m", 14, 12, 2), blk("L", 20, 0, 1), bio,
+             check.names = FALSE, stringsAsFactors = TRUE)
 }
 
 ## Hantavirus-like presence/absence for ENM (binomial on two bioclim predictors)

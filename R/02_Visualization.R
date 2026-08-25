@@ -24,29 +24,68 @@
 ## ---------------------------------------------------------------------------
 ##  STANDALONE USE (no repository needed)
 ##  ---------------------------------------------------------------------------
-##  As shipped, the source() line below borrows three helpers from the course
-##  repository: get_data() (loads a data set), need() (loads packages) and
-##  with_fig() (opens a plot device). To run this script entirely on its own,
-##  delete that line and uncomment the block below. Nothing else changes.
+##  As shipped, the source() line below borrows a few helpers from the course
+##  repository: get_data() (loads a data set), need() (loads packages),
+##  with_fig() (opens a plot device) and has_pkg()/skip_note() (let an optional
+##  section be skipped rather than crash). To run this script entirely on its
+##  own, delete that line and uncomment the block below. Nothing else changes.
 ##
-##  The standalone with_fig() just draws each figure to the screen, one after
-##  the other. To save them as files instead, replace its body with
+##  The standalone with_fig() draws each figure to the current device -- inside
+##  RStudio that is the Plot pane, so figures accumulate in the plot history.
+##  To save them as files instead, replace its body with
 ##      png(paste0(name, ".png")); on.exit(dev.off()); force(expr)
 ##
-##  Files to keep next to this script: none — the data sets used here ship with R itself
+##  Files to keep next to this script: iris.data.csv
 ##
 # need <- function(...) invisible(lapply(c(...), function(p) {
 #   if (!requireNamespace(p, quietly = TRUE))
 #     stop("This session needs: install.packages(\"", p, "\")", call. = FALSE)
 #   suppressPackageStartupMessages(library(p, character.only = TRUE))
 # }))
-# with_fig <- function(name, expr, ...) invisible(force(expr))   # draw on screen
+# with_fig <- function(name, expr, ...) {          # draw on the current device;
+#   op <- par(no.readonly = TRUE); on.exit(par(op))  # in RStudio that is the Plot pane
+#   invisible(force(expr))
+# }
+# has_pkg <- function(...) all(vapply(c(...), requireNamespace, logical(1), quietly = TRUE))
+# skip_note <- function(what, pkgs) {
+#   message("  [skipped] ", what, " -- needs ", paste(pkgs, collapse = ", "),
+#           ":  install.packages(c(",
+#           paste(sprintf('"%s"', pkgs), collapse = ", "), "))")
+#   invisible(FALSE)
+# }
 # get_data <- function(name) { utils::data("iris");   iris }
+# data_dir <- function() "."                       # look for data files here
 ## ---------------------------------------------------------------------------
 if (!exists("get_data")) source(file.path("R", "00_utils.R"))
 need("cluster")
 
-## ---- 1. Reading and interrogating a data matrix ----------------------------
+## ============================================================================
+##  1. GETTING DATA INTO R
+## ============================================================================
+##  Where am I? Every path R sees is relative to this directory.
+cat("Working directory:", getwd(), "\n")
+
+##  The two workhorses are read.table() and read.csv(); read.csv() is just
+##  read.table() with header = TRUE and sep = "," already set. Both take a path
+##  relative to getwd(), which is why hard-coded absolute paths (the original
+##  scripts began with setwd("C:\\Users\\...")) break on everyone else's machine.
+csv <- file.path(data_dir(), "iris.data.csv")
+if (file.exists(csv)) {
+  m1 <- read.table(csv, header = TRUE, sep = ",")   # the explicit form
+  m2 <- read.csv(csv)                               # the shorthand
+  cat("read.table and read.csv agree:", identical(m1, m2), "\n")
+  cat("columns in the course CSV:", paste(names(m2), collapse = ", "), "\n")
+  ## Note: the course file puts the SPECIES in column 1 and names the
+  ## measurements Sepal_L ... Petal_W. R's built-in iris puts Species LAST and
+  ## uses Sepal.Length ... Petal.Width. Same data, different layout -- always
+  ## look before you index by number.
+}
+
+##  Other formats you will meet: readRDS() for R's own binary format (that is
+##  how leukemiaExpressionSubset.rds is stored), and read.csv(header = FALSE)
+##  for a headerless numeric grid such as Limenitis_archippus.csv.
+
+## ---- interrogating the object -----------------------------------------------
 m <- get_data("iris")
 
 cat("mode:", mode(m), " class:", class(m), "\n")
@@ -65,11 +104,10 @@ pal <- c("#8c2d3a", "#1f3b73", "#2a7f7f")        # one colour per species
 ## "is the structure the one I already know about?" — the difference between
 ## unsupervised and supervised thinking, in two lines of code.
 with_fig("02_scatter_grouped", {
-  op <- par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+  par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
   plot(X[, 1:2], pch = 19, col = "grey40", main = "No grouping")
   plot(X[, 1:2], pch = 19, col = pal[grp],  main = "Coloured by species")
   legend("topright", legend = levels(grp), fill = pal, bty = "n", cex = .8)
-  par(op)
 }, width = 10, height = 5)
 
 ## ---- 3. Ellipsoid hulls: the first multivariate summary --------------------
@@ -106,12 +144,11 @@ with_fig("02_ellipsoid_hulls", {
 ## Bin width is a choice, not a property of the data: the same column looks
 ## unimodal at 8 bins and bimodal at 30. Say which you used.
 with_fig("02_histograms", {
-  op <- par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+  par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
   hist(X[, 1], main = "Sepal.Length, default bins", xlab = "Sepal.Length",
        col = "grey85")
   hist(X[, 1], nclass = 20, main = "Sepal.Length, 20 bins",
        xlab = "Sepal.Length", col = "grey85")
-  par(op)
 }, width = 10, height = 5)
 
 ## ---- 5. All pairs at once: the R view, panel by panel ----------------------
@@ -120,16 +157,33 @@ with_fig("02_pairs", {
         main = "Iris: every pair of variables")
 })
 
+## ---- 5b. Three variables, rotatable ----------------------------------------
+##  rgl opens a window you can drag with the mouse -- the best way to convey
+##  that a 3-D scatter has no single correct viewpoint. It needs a live OpenGL
+##  display, so it is skipped in batch runs and on machines without rgl.
+if (interactive() && has_pkg("rgl")) {
+  rgl::plot3d(X[, 1:3], col = pal[grp], type = "s", size = 1)
+  rgl::rglwidget()          # embeds the widget when knitting; harmless otherwise
+} else {
+  skip_note("interactive 3-D scatter (drag to rotate)", "rgl")
+}
+
 ## ---- 6. Summaries by group, and exporting them -----------------------------
 cat("\nColumn means (whole table):\n"); print(round(colMeans(X), 3))
 
 out <- aggregate(X, by = list(Species = grp), FUN = mean)
 cat("\nColumn means by species:\n"); print(out)
 
+## Exporting: write.table() is the general form (you choose the separator),
+## write.csv() the comma-specific shorthand. row.names = FALSE stops R from
+## adding a leading column of "1", "2", "3" that no other program expects.
+##
 ## Written to a temporary directory so sourcing this script never litters the
-## repository; point `dest` at data/ or a results folder to keep the file.
-dest <- file.path(tempdir(), "means_iris.csv")
-utils::write.csv(out, dest, row.names = FALSE)
-cat("\nWrote", dest, "\n")
+## repository; point `dest` at data/ or a results folder to keep the files.
+dest_txt <- file.path(tempdir(), "means_iris.txt")
+dest_csv <- file.path(tempdir(), "means_iris.csv")
+utils::write.table(out, dest_txt, sep = "\t", row.names = FALSE)
+utils::write.csv(out, dest_csv, row.names = FALSE)
+cat("\nWrote", dest_txt, "\n      ", dest_csv, "\n")
 
 cat("\n[02_Visualization] done.\n")
