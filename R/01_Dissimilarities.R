@@ -62,7 +62,7 @@ X <- iris[, 1:4]
 ## ============================================================================
 ##  In the R view the units of each variable do not matter to the *question*,
 ##  but they matter enormously to the *answer*: covariance is in squared units,
-##  so a variable measured in millimetres dominates one measured in metres.
+##  so a variable measured in millimeters dominates one measured in meters.
 m.cov <- cov(X)
 cat("\nCovariance matrix (R view):\n"); print(round(m.cov, 3))
 
