@@ -99,14 +99,16 @@ cat("\ncov(scale(X)) equals cor(X):", isTRUE(all.equal(ms.cov, m.cor,
 ##
 ##  A metric satisfies three conditions:  d(x,y) >= 0;  d(x,x) = 0;
 ##  and the triangle inequality  d(x,y) + d(y,z) >= d(x,z).
-##  Several of the coefficients above are *not* metrics -- worth knowing before
+##  Several of the coefficients above are *not* metrics but 
+##  dissimilarities, like "bray" and "morisita" -- worth knowing before
 ##  handing one to a method that assumes Euclidean geometry.
+
 cat("\nNumber of pairwise distances:", choose(nrow(X), 2), "\n")
 
 d_euc  <- vegan::vegdist(X,  method = "euclidean", diag = TRUE)   # raw units
 d_eucS <- vegan::vegdist(Xs, method = "euclidean", diag = TRUE)   # standardized
-d_bray <- vegan::vegdist(X,  method = "bray",      diag = TRUE)
-d_gow  <- vegan::vegdist(X,  method = "gower",     diag = TRUE)
+d_bray <- vegan::vegdist(X,  method = "bray", diag = TRUE)
+d_gow  <- vegan::vegdist(X,  method = "gower", diag = TRUE)
 
 cat("\nRange of each coefficient:\n")
 print(round(sapply(list(euclidean = d_euc, euclidean_std = d_eucS,
@@ -144,8 +146,8 @@ m_bray  <- as.matrix(d_bray)
 ## ramp shows the gradient, a rainbow invents boundaries that are not there.
 with_fig("01_diss_palettes", {
   par(mfrow = c(1, 2))
-  image(m_euc, col = heat.colors(20),       main = "heat.colors")
-  image(m_euc, col = rainbow(20),           main = "rainbow (avoid)")
+  image(m_euc, col = heat.colors(20), main = "heat.colors")
+  image(m_euc, col = rainbow(20),main = "rainbow (avoid)")
 }, width = 10, height = 5)
 
 ## the figure used in the book
@@ -168,9 +170,9 @@ setosaB <- m_bray[1:50, 1:50]
 
 with_fig("01_setosa_ordered", {
   par(mfrow = c(2, 2))
-  image(setosaE,              col = rainbow(20), main = "setosa Euclidean, as given")
+  image(setosaE, col = rainbow(20), main = "setosa Euclidean, as given")
   image(order_block(setosaE), col = rainbow(20), main = "setosa Euclidean, ordered")
-  image(setosaB,              col = rainbow(20), main = "setosa Bray-Curtis, as given")
+  image(setosaB, col = rainbow(20), main = "setosa Bray-Curtis, as given")
   image(order_block(setosaB), col = rainbow(20), main = "setosa Bray-Curtis, ordered")
 }, width = 9, height = 8)
 
