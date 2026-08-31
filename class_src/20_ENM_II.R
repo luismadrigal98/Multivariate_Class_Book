@@ -24,8 +24,12 @@
 ##  edit R/20_ENM_II.R and regenerate; changes made here will be overwritten.
 ## ============================================================================
 
-# Working directory -- point this at the folder holding the data files
-#   hanta_virtual.csv
+# Working directory
+#   Point this at the folder that holds this session's data. Every file
+#   name below is resolved relative to it, so the script and its data have
+#   to travel together -- or at least stay in step.
+#
+#   This session reads: hanta_virtual.csv
 setwd("YOUR/DIRECTORY")
 
 # Area under the ROC curve, from the rank-sum identity (no extra package)

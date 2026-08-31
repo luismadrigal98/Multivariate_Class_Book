@@ -19,8 +19,12 @@
 library(MASS)
 library(vegan)
 
-# Working directory -- point this at the folder holding the data files
-#   taxon.csv
+# Working directory
+#   Point this at the folder that holds this session's data. Every file
+#   name below is resolved relative to it, so the script and its data have
+#   to travel together -- or at least stay in step.
+#
+#   This session reads: taxon.csv
 setwd("YOUR/DIRECTORY")
 
 # Built-in data sets used below

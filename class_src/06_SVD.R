@@ -13,8 +13,12 @@
 ##  edit R/06_SVD.R and regenerate; changes made here will be overwritten.
 ## ============================================================================
 
-# Working directory -- point this at the folder holding the data files
-#   Limenitis_archippus.csv
+# Working directory
+#   Point this at the folder that holds this session's data. Every file
+#   name below is resolved relative to it, so the script and its data have
+#   to travel together -- or at least stay in step.
+#
+#   This session reads: Limenitis_archippus.csv
 setwd("YOUR/DIRECTORY")
 
 ## ============================================================================
