@@ -266,3 +266,7 @@ figs/21_pam_margins.png
 figs/21_pam_products.png
 figs/21_range_diversity_unit.png
 .Rproj.user
+.RData
+.Rhistory
+figs/20_cleaning_map_range.png
+figs/20_cleaning_map_world.png

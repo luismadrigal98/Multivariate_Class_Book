@@ -18,45 +18,22 @@
 ##  2. Where do you cut a continuous suitability into presence/absence?  (thresholds)
 ##  3. Is the projection an interpolation or an extrapolation?  (novel environments)
 ## ============================================================================
-## ---------------------------------------------------------------------------
-##  STANDALONE USE (no repository needed)
-##  ---------------------------------------------------------------------------
-##  As shipped, the source() line below borrows a few helpers from the course
-##  repository: get_data() (loads a data set), need() (loads packages),
-##  with_fig() (opens a plot device) and has_pkg()/skip_note() (let an optional
-##  section be skipped rather than crash). To run this script entirely on its
-##  own, delete that line and uncomment the block below. Nothing else changes.
-##
-##  The standalone with_fig() draws each figure to the current device -- inside
-##  RStudio that is the Plot pane, so figures accumulate in the plot history.
-##  To save them as files instead, replace its body with
-##      png(paste0(name, ".png")); on.exit(dev.off()); force(expr)
-##
-##  Files to keep next to this script: hanta_virtual.csv
-##
-# need <- function(...) invisible(lapply(c(...), function(p) {
-#   if (!requireNamespace(p, quietly = TRUE))
-#     stop("This session needs: install.packages(\"", p, "\")", call. = FALSE)
-#   suppressPackageStartupMessages(library(p, character.only = TRUE))
-# }))
-# with_fig <- function(name, expr, ...) {          # draw on the current device;
-#   op <- par(no.readonly = TRUE); on.exit(par(op))  # in RStudio that is the Plot pane
-#   invisible(force(expr))
-# }
-# has_pkg <- function(...) all(vapply(c(...), requireNamespace, logical(1), quietly = TRUE))
-# skip_note <- function(what, pkgs) {
-#   message("  [skipped] ", what, " -- needs ", paste(pkgs, collapse = ", "),
-#           ":  install.packages(c(",
-#           paste(sprintf('"%s"', pkgs), collapse = ", "), "))")
-#   invisible(FALSE)
-# }
-# get_data <- function(name) read.csv("hanta_virtual.csv")
-# auc <- function(p, y) {                 # rank-based AUC, no extra package
-#   r <- rank(p); n1 <- sum(y == 1); n0 <- sum(y == 0)
-#   (sum(r[y == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
-# }
-## ---------------------------------------------------------------------------
-if (!exists("get_data")) source(file.path("R", "00_utils.R"))
+
+##  PLAIN CLASSROOM EDITION
+##  Generated from R/20_ENM_II.R by scripts/make_class_src.py --
+##  edit R/20_ENM_II.R and regenerate; changes made here will be overwritten.
+## ============================================================================
+
+# Working directory -- point this at the folder holding the data files
+#   hanta_virtual.csv
+setwd("YOUR/DIRECTORY")
+
+# Area under the ROC curve, from the rank-sum identity (no extra package)
+auc <- function(p, y) {
+  r <- rank(p)
+  n1 <- sum(y == 1); n0 <- sum(y == 0)
+  (sum(r[y == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
 
 ## ############################################################################
 ##  PART A -- MUCH OF NICHE MODELLING IS DATA PREPARATION
@@ -65,13 +42,14 @@ if (!exists("get_data")) source(file.path("R", "00_utils.R"))
 ##  GBIF. Both need a live network, so the demonstrations below use the example
 ##  data bundled with dismo -- the same workflow, reproducible offline. The
 ##  network versions are kept as commented recipes where they belong.
-have_dismo <- has_pkg("dismo", "raster")
+have_dismo <- requireNamespace("dismo", quietly = TRUE) && requireNamespace("raster", quietly = TRUE)
 
 if (have_dismo) {
   ## dismo defines S4 plot/predict methods, so these two must be ATTACHED for
   ## dispatch to find them -- dismo::plot(model) alone falls through to
   ## plot.default and errors on the model-specific arguments.
-  need("dismo", "raster")
+  library(dismo)
+  library(raster)
 
   ## ---- a clean file, to start with ------------------------------------------
   ##  Bradypus variegatus, the brown-throated sloth: longitude/latitude only,
@@ -80,14 +58,13 @@ if (have_dismo) {
   bv  <- bv2[, 2:3]
   cat("Bradypus records:", nrow(bv), "\n"); print(head(bv2))
 
-  with_fig("20_bradypus_map", {
-    if (has_pkg("maps")) maps::map("world", xlim = c(-100, -35), ylim = c(-40, 25),
-                                   col = "grey70", fill = TRUE, bg = "white")
-    else plot(bv, type = "n")
-    points(bv, pch = 19, col = "orange", cex = .75)
-    points(bv, cex = 1.2)
-    title("Bradypus variegatus")
-  }, width = 8, height = 7)
+  par(mfrow = c(1, 1))
+  if (requireNamespace("maps", quietly = TRUE)) maps::map("world", xlim = c(-100, -35), ylim = c(-40, 25),
+                                 col = "grey70", fill = TRUE, bg = "white") else plot(bv, type = "n")
+  points(bv, pch = 19, col = "orange", cex = .75)
+  points(bv, cex = 1.2)
+  title("Bradypus variegatus")
+
 
   ## ---- and a messy one -------------------------------------------------------
   ##  Solanum acaule as it comes out of a herbarium aggregator: duplicates,
@@ -112,20 +89,20 @@ if (have_dismo) {
   ## Two separate figures rather than one two-panel one: maps::map() fixes the
   ## aspect ratio to the projection, so a world map squeezed into half a device
   ## demands a plot region larger than the device and errors out.
-  with_fig("20_cleaning_map_world", {
-    if (has_pkg("maps")) maps::map("world", col = "grey75")
-    else plot(xy, type = "n", xlab = "lon", ylab = "lat")
-    points(xy, pch = 19, col = "red", cex = .6)
-    title("Everything, worldwide")
-  }, width = 11, height = 6)
+  par(mfrow = c(1, 1))
+  # Wide figure: widen the Plot pane, or open a sized device first --
+  #   dev.new(width = 11, height = 6)
+  if (requireNamespace("maps", quietly = TRUE)) maps::map("world", col = "grey75") else plot(xy, type = "n", xlab = "lon", ylab = "lat")
+  points(xy, pch = 19, col = "red", cex = .6)
+  title("Everything, worldwide")
 
-  with_fig("20_cleaning_map_range", {
-    if (has_pkg("maps")) maps::map("world", xlim = c(-85, -55), ylim = c(-40, 5),
-                                   col = "grey75")
-    else plot(xy, type = "n", xlab = "lon", ylab = "lat")
-    points(xy, pch = 19, col = "orange", cex = .8); points(xy, cex = 1.1)
-    title("The intended range")
-  }, width = 7, height = 7)
+
+  par(mfrow = c(1, 1))
+  if (requireNamespace("maps", quietly = TRUE)) maps::map("world", xlim = c(-85, -55), ylim = c(-40, 5),
+                                 col = "grey75") else plot(xy, type = "n", xlab = "lon", ylab = "lat")
+  points(xy, pch = 19, col = "orange", cex = .8); points(xy, cex = 1.1)
+  title("The intended range")
+
 
   cat("\nRecords far outside the known range are the point of the exercise:\n",
       "  they may be cultivated material, transposed coordinates, a country\n",
@@ -146,7 +123,8 @@ if (have_dismo) {
   names(bios) <- sub("\\.grd$", "", basename(fnames))
   print(bios)
 
-  with_fig("20_predictor_layers", plot(bios), width = 10, height = 8)
+  par(mfrow = c(1, 1))
+  plot(bios)
 
   ## ---- correlated predictors can still define a niche ------------------------
   ##  Minimum and maximum temperature are strongly correlated, as you would
@@ -161,14 +139,14 @@ if (have_dismo) {
   mod  <- lm(b6P[ok] ~ b5P[ok])
   print(summary(mod))
 
-  with_fig("20_predictor_correlation", {
-    plot(b5P[ok], b6P[ok], pch = ".", col = "grey40",
-         xlab = "BIO5 (max temp, warmest month)",
-         ylab = "BIO6 (min temp, coldest month)",
-         main = sprintf("r = %.2f, R2 = %.2f -- and still room for a niche",
-                        cor(b5P[ok], b6P[ok]), summary(mod)$r.squared))
-    abline(mod, col = "red", lwd = 2)
-  })
+  par(mfrow = c(1, 1))
+  plot(b5P[ok], b6P[ok], pch = ".", col = "grey40",
+       xlab = "BIO5 (max temp, warmest month)",
+       ylab = "BIO6 (min temp, coldest month)",
+       main = sprintf("r = %.2f, R2 = %.2f -- and still room for a niche",
+                      cor(b5P[ok], b6P[ok]), summary(mod)$r.squared))
+  abline(mod, col = "red", lwd = 2)
+
 
   ## ---- the species in E-space --------------------------------------------------
   st  <- bios[[c("bio5", "bio6", "bio12", "bio16")]]
@@ -176,18 +154,18 @@ if (have_dismo) {
   cat("\npredictors at the occurrence points:", nrow(vrs), "usable records\n")
   print(head(vrs))
 
-  with_fig("20_espace_pairs", {
-    pairs(vrs, pch = 19, cex = .4, col = "#1f3b73",
-          main = "Bradypus in environmental space")
-  }, width = 8, height = 8)
+  par(mfrow = c(1, 1))
+  pairs(vrs, pch = 19, cex = .4, col = "#1f3b73",
+        main = "Bradypus in environmental space")
 
-  if (has_pkg("car")) {
-    with_fig("20_espace_ellipses", {
-      car::scatterplotMatrix(vrs, pch = 19, col = "blue", regLine = FALSE,
-                             smooth = FALSE,
-                             ellipse = list(levels = c(0.95, 0.999),
-                                            robust = FALSE, fill = TRUE))
-    }, width = 8, height = 8)
+
+  if (requireNamespace("car", quietly = TRUE)) {
+    par(mfrow = c(1, 1))
+    car::scatterplotMatrix(vrs, pch = 19, col = "blue", regLine = FALSE,
+                           smooth = FALSE,
+                           ellipse = list(levels = c(0.95, 0.999),
+                                          robust = FALSE, fill = TRUE))
+
   }
 
   ## ############################################################################
@@ -197,29 +175,31 @@ if (have_dismo) {
   ##  percentile distribution of the occurrence points -- a box, not a surface.
   ##  It is presence-only and it is old, which makes it a good baseline.
   bio_vm <- bioclim(st, bv)
-  with_fig("20_bioclim_envelope", {
-    par(mfrow = c(1, 2))
-    plot(bio_vm, p = 0.85, main = "85% envelope")
-    plot(bio_vm, p = 0.95, main = "95% envelope")
-  }, width = 11, height = 5.5)
+  # Wide figure: widen the Plot pane, or open a sized device first --
+  #   dev.new(width = 11, height = 5.5)
+  op <- par(mfrow = c(1, 2))
+  plot(bio_vm, p = 0.85, main = "85% envelope")
+  plot(bio_vm, p = 0.95, main = "95% envelope")
+  par(op)
 
   pred_vm <- predict(st, bio_vm, progress = "")
-  with_fig("20_bioclim_prediction", {
-    plot(pred_vm, main = "bioclim suitability (raw)")
-    if (has_pkg("maps")) maps::map("world", add = TRUE, col = "grey40")
-  }, width = 9, height = 7)
+  par(mfrow = c(1, 1))
+  plot(pred_vm, main = "bioclim suitability (raw)")
+  if (requireNamespace("maps", quietly = TRUE)) maps::map("world", add = TRUE, col = "grey40")
+
 
   ## ---- from continuous to binary: pick a threshold ---------------------------
   qq <- quantile(pred_vm, probs = (1:20) / 20, na.rm = TRUE)
   cat("\nquantiles of the prediction:\n"); print(round(qq, 4))
 
-  with_fig("20_bioclim_thresholds", {
-    par(mfrow = c(1, 2))
-    plot(pred_vm > qq[18], main = "threshold = top 90%")
-    if (has_pkg("maps")) maps::map("world", add = TRUE, col = "grey40")
-    plot(pred_vm > qq[19], main = "threshold = top 95%")
-    if (has_pkg("maps")) maps::map("world", add = TRUE, col = "grey40")
-  }, width = 13, height = 6)
+  # Wide figure: widen the Plot pane, or open a sized device first --
+  #   dev.new(width = 13, height = 6)
+  op <- par(mfrow = c(1, 2))
+  plot(pred_vm > qq[18], main = "threshold = top 90%")
+  if (requireNamespace("maps", quietly = TRUE)) maps::map("world", add = TRUE, col = "grey40")
+  plot(pred_vm > qq[19], main = "threshold = top 95%")
+  if (requireNamespace("maps", quietly = TRUE)) maps::map("world", add = TRUE, col = "grey40")
+  par(op)
 
   ## ############################################################################
   ##  PART D -- ELLIPSOIDS: THE MAHALANOBIS MODEL
@@ -232,16 +212,16 @@ if (have_dismo) {
   ext     <- extent(-90, -32, -35, 15)          # restrict: it is slow
   pred_mh <- predict(crop(st, ext), maha_vm, progress = "")
 
-  with_fig("20_mahalanobis", {
-    par(mfrow = c(1, 2))
-    plot(pred_vm, ext = ext, main = "bioclim (box)")
-    if (has_pkg("maps")) maps::map("world", add = TRUE, col = "grey40")
-    plot(pred_mh, main = "Mahalanobis (ellipsoid)")
-    if (has_pkg("maps")) maps::map("world", add = TRUE, col = "grey40")
-  }, width = 13, height = 6)
+  # Wide figure: widen the Plot pane, or open a sized device first --
+  #   dev.new(width = 13, height = 6)
+  op <- par(mfrow = c(1, 2))
+  plot(pred_vm, ext = ext, main = "bioclim (box)")
+  if (requireNamespace("maps", quietly = TRUE)) maps::map("world", add = TRUE, col = "grey40")
+  plot(pred_mh, main = "Mahalanobis (ellipsoid)")
+  if (requireNamespace("maps", quietly = TRUE)) maps::map("world", add = TRUE, col = "grey40")
+  par(op)
 } else {
-  skip_note("the dismo workflow (bioclim, Mahalanobis, raster projection)",
-            c("dismo", "raster"))
+  message("Skipped: the dismo workflow (bioclim, Mahalanobis, raster projection).  Install with: install.packages(c(\"dismo\", \"raster\"))")
 }
 
 ## ############################################################################
@@ -252,7 +232,7 @@ if (have_dismo) {
 ##    1. does it DISCRIMINATE on data it has not seen?  (cross-validated AUC)
 ##    2. where do you cut suitability into presence/absence?  (thresholds)
 ##    3. is a projection interpolation or extrapolation?  (novel environments)
-occ  <- get_data("hanta")
+occ  <- read.csv("hanta_virtual.csv")
 form <- Sp ~ poly(bio_1, 2) + bio_12
 full <- glm(form, data = occ, family = binomial)
 
@@ -305,24 +285,23 @@ print(round(cbind(threshold = thr, tab), 3))
 ## ones -- and halves the predicted area. Neither is correct in the abstract;
 ## failing to say which you used is not defensible.
 
-with_fig("20_enm_thresholds", {
-  par(mfrow = c(1, 2))
-  ord <- order(-p)
-  tpr <- cumsum(occ$Sp[ord] == 1) / sum(occ$Sp == 1)
-  fpr <- cumsum(occ$Sp[ord] == 0) / sum(occ$Sp == 0)
-  plot(fpr, tpr, type = "l", lwd = 2, col = "#1f3b73",
-       xlab = "false positive rate", ylab = "true positive rate",
-       main = paste0("ROC (AUC = ", round(auc(p, occ$Sp), 3), ")"))
-  abline(0, 1, lty = 2, col = "grey60")
-  ts <- seq(0, 1, length = 200)
-  plot(ts, vapply(ts, function(t) mean(p >= t), numeric(1)), type = "l", lwd = 2,
-       col = "#1f3b73", xlab = "threshold",
-       ylab = "fraction of sites called suitable",
-       main = "Predicted area vs. threshold")
-  abline(v = thr, col = c("#8c2d3a", "#2a7f7f", "grey30"), lty = 2)
-  legend("topright", names(thr), lty = 2, bty = "n", cex = .7,
-         col = c("#8c2d3a", "#2a7f7f", "grey30"))
-}, width = 10, height = 4.6)
+op <- par(mfrow = c(1, 2))
+ord <- order(-p)
+tpr <- cumsum(occ$Sp[ord] == 1) / sum(occ$Sp == 1)
+fpr <- cumsum(occ$Sp[ord] == 0) / sum(occ$Sp == 0)
+plot(fpr, tpr, type = "l", lwd = 2, col = "#1f3b73",
+     xlab = "false positive rate", ylab = "true positive rate",
+     main = paste0("ROC (AUC = ", round(auc(p, occ$Sp), 3), ")"))
+abline(0, 1, lty = 2, col = "grey60")
+ts <- seq(0, 1, length = 200)
+plot(ts, vapply(ts, function(t) mean(p >= t), numeric(1)), type = "l", lwd = 2,
+     col = "#1f3b73", xlab = "threshold",
+     ylab = "fraction of sites called suitable",
+     main = "Predicted area vs. threshold")
+abline(v = thr, col = c("#8c2d3a", "#2a7f7f", "grey30"), lty = 2)
+legend("topright", names(thr), lty = 2, bty = "n", cex = .7,
+       col = c("#8c2d3a", "#2a7f7f", "grey30"))
+par(op)
 
 ## ---- 3. transfer, and how much of it is extrapolation ------------------------
 future <- transform(occ, bio_1 = bio_1 + 3)
@@ -337,18 +316,17 @@ in_range <- function(v, ref) v >= min(ref) & v <= max(ref)
 novel    <- !(in_range(future$bio_1, occ$bio_1) & in_range(future$bio_12, occ$bio_12))
 cat("Projection points in novel environments:", round(100 * mean(novel), 1), "%\n")
 
-with_fig("20_enm_transfer", {
-  plot(occ$bio_1, p_now, pch = 19, cex = .3, col = "grey70",
-       xlab = "bio_1 (temperature)", ylab = "predicted suitability",
-       main = "Current vs +3 C, novel environments flagged")
-  points(future$bio_1[!novel], p_fut[!novel], pch = 19, cex = .3, col = "#1f3b73")
-  points(future$bio_1[novel],  p_fut[novel],  pch = 4,  cex = .5, col = "#8c2d3a")
-  abline(h = tcut, lty = 2, col = "grey30")
-  legend("topleft", c("current", "+3 C, within training range",
-                      "+3 C, EXTRAPOLATED"),
-         pch = c(19, 19, 4), col = c("grey70", "#1f3b73", "#8c2d3a"),
-         bty = "n", cex = .75)
-})
+par(mfrow = c(1, 1))
+plot(occ$bio_1, p_now, pch = 19, cex = .3, col = "grey70",
+     xlab = "bio_1 (temperature)", ylab = "predicted suitability",
+     main = "Current vs +3 C, novel environments flagged")
+points(future$bio_1[!novel], p_fut[!novel], pch = 19, cex = .3, col = "#1f3b73")
+points(future$bio_1[novel],  p_fut[novel],  pch = 4,  cex = .5, col = "#8c2d3a")
+abline(h = tcut, lty = 2, col = "grey30")
+legend("topleft", c("current", "+3 C, within training range",
+                    "+3 C, EXTRAPOLATED"),
+       pch = c(19, 19, 4), col = c("grey70", "#1f3b73", "#8c2d3a"),
+       bty = "n", cex = .75)
 
 cat("\n[20_ENM_II] most of niche modelling is cleaning data; cross-validate",
     "before believing an AUC; state the threshold rule you used; and never",

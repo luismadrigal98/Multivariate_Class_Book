@@ -7,46 +7,24 @@
 ##
 ##  Revised from 14_CorrespondaceAnalysis.R. Uses frozen Doubs fish counts.
 ## ============================================================================
-## ---------------------------------------------------------------------------
-##  STANDALONE USE (no repository needed)
-##  ---------------------------------------------------------------------------
-##  As shipped, the source() line below borrows a few helpers from the course
-##  repository: get_data() (loads a data set), need() (loads packages),
-##  with_fig() (opens a plot device) and has_pkg()/skip_note() (let an optional
-##  section be skipped rather than crash). To run this script entirely on its
-##  own, delete that line and uncomment the block below. Nothing else changes.
-##
-##  The standalone with_fig() draws each figure to the current device -- inside
-##  RStudio that is the Plot pane, so figures accumulate in the plot history.
-##  To save them as files instead, replace its body with
-##      png(paste0(name, ".png")); on.exit(dev.off()); force(expr)
-##
-##  Files to keep next to this script: ButterfliesQRoo2.csv
-##
-# need <- function(...) invisible(lapply(c(...), function(p) {
-#   if (!requireNamespace(p, quietly = TRUE))
-#     stop("This session needs: install.packages(\"", p, "\")", call. = FALSE)
-#   suppressPackageStartupMessages(library(p, character.only = TRUE))
-# }))
-# with_fig <- function(name, expr, ...) {          # draw on the current device;
-#   op <- par(no.readonly = TRUE); on.exit(par(op))  # in RStudio that is the Plot pane
-#   invisible(force(expr))
-# }
-# has_pkg <- function(...) all(vapply(c(...), requireNamespace, logical(1), quietly = TRUE))
-# skip_note <- function(what, pkgs) {
-#   message("  [skipped] ", what, " -- needs ", paste(pkgs, collapse = ", "),
-#           ":  install.packages(c(",
-#           paste(sprintf('"%s"', pkgs), collapse = ", "), "))")
-#   invisible(FALSE)
-# }
-# get_data <- function(name) switch(name,
-#   butterflies = read.csv("ButterfliesQRoo2.csv", stringsAsFactors = TRUE),
-#   doubs       = { utils::data("doubs", package = "ade4")
-#                     list(fish = doubs$fish, env = doubs$env, xy = doubs$xy) },
-#   stop("unknown data set: ", name))
-## ---------------------------------------------------------------------------
-if (!exists("get_data")) source(file.path("R", "00_utils.R"))
-need("vegan")
+
+##  PLAIN CLASSROOM EDITION
+##  Generated from R/08_CorrespondenceAnalysis.R by scripts/make_class_src.py --
+##  edit R/08_CorrespondenceAnalysis.R and regenerate; changes made here will be overwritten.
+## ============================================================================
+
+# R packages required
+#install.packages("vegan")
+#install.packages("ade4")
+library(vegan)
+library(ade4)
+
+# Working directory -- point this at the folder holding the data files
+#   ButterfliesQRoo2.csv
+setwd("YOUR/DIRECTORY")
+
+# Built-in data sets used below
+data(doubs)          # the Verneaux river-fish tables
 
 ## ============================================================================
 ##  1. WHY A DIFFERENT DISTANCE
@@ -64,7 +42,7 @@ need("vegan")
 ##
 ##  Data: Verneaux (1973) -- 27 fish species, 11 environmental variables and
 ##  coordinates for 30 sites along the Doubs river in the Jura.
-doubs <- get_data("doubs")
+
 ## doubs carries several tables; these are the three this session uses.
 ## (ade4's object also has a `species` table of Latin names.)
 cat("fish table:", nrow(doubs$fish), "sites x", ncol(doubs$fish), "species\n")
@@ -74,11 +52,11 @@ print(head(doubs$env))
 
 ## ---- the sites are a river, so they are spatially ordered -------------------
 if (!is.null(doubs$xy)) {
-  with_fig("08_doubs_geography", {
-    plot(doubs$xy, pch = 19, col = "seagreen", asp = 1,
-         main = "The 30 sites, in real geography")
-    text(doubs$xy, labels = seq_len(nrow(doubs$xy)), pos = 3, cex = .7)
-  })
+  par(mfrow = c(1, 1))
+  plot(doubs$xy, pch = 19, col = "seagreen", asp = 1,
+       main = "The 30 sites, in real geography")
+  text(doubs$xy, labels = seq_len(nrow(doubs$xy)), pos = 3, cex = .7)
+
   cat("\nThe sites trace the river downstream -- so spatial covariance is not a",
       "hypothesis, it is a certainty.\n")
 }
@@ -132,16 +110,18 @@ evplot <- function(ev, main = "") {
   legend("topright", c("% eigenvalue", "Broken stick model"),
          pch = 15, col = c("bisque", 2), bty = "n")
 }
-with_fig("08_ca_evplot", evplot(ev, "(Doubs fish)"), width = 8, height = 7)
+par(mfrow = c(1, 1))
+evplot(ev, "(Doubs fish)")
 
 ## ============================================================================
 ##  3. THE BIPLOTS
 ## ============================================================================
-with_fig("08_ca_biplot", {
-  par(mfrow = c(1, 2))
-  plot(f.ca, scaling = 1, main = "Scaling 1: sites are centroids of species")
-  plot(f.ca, scaling = 2, main = "Scaling 2: species are centroids of sites")
-}, width = 12, height = 6)
+# Wide figure: widen the Plot pane, or open a sized device first --
+#   dev.new(width = 12, height = 6)
+op <- par(mfrow = c(1, 2))
+plot(f.ca, scaling = 1, main = "Scaling 1: sites are centroids of species")
+plot(f.ca, scaling = 2, main = "Scaling 2: species are centroids of sites")
+par(op)
 
 ##  Axis 1 separates sites 19-30, the downstream ones, and most species sit near
 ##  them -- they are frequent there. Axis 2 picks out intermediate sites and the
@@ -157,10 +137,9 @@ set.seed(1998)
 spe.ca.env <- vegan::envfit(f.ca, env, permutations = 999)
 print(spe.ca.env)
 
-with_fig("08_ca_envfit", {
-  plot(f.ca, scaling = 2, main = "CA with environmental vectors")
-  plot(spe.ca.env)
-})
+par(mfrow = c(1, 1))
+plot(f.ca, scaling = 2, main = "CA with environmental vectors")
+plot(spe.ca.env)
 
 ## ============================================================================
 ##  4. THE ARCH EFFECT, AND DETRENDING
@@ -172,18 +151,19 @@ with_fig("08_ca_envfit", {
 f.dca <- vegan::decorana(fish)
 print(f.dca)
 
-with_fig("08_ca_vs_dca", {
-  par(mfrow = c(1, 2))
-  plot(f.ca,  main = "CA: note the arch")
-  plot(f.dca, main = "Detrended (decorana)")
-}, width = 12, height = 6)
+# Wide figure: widen the Plot pane, or open a sized device first --
+#   dev.new(width = 12, height = 6)
+op <- par(mfrow = c(1, 2))
+plot(f.ca,  main = "CA: note the arch")
+plot(f.dca, main = "Detrended (decorana)")
+par(op)
 
 ## ============================================================================
 ##  5. THE SAME ANALYSIS ON THE BUTTERFLIES
 ## ============================================================================
 ##  Sites x wing patterns, from session 04. Here the gradient is succession, and
 ##  the arch is almost entirely a consequence of it.
-qroo3 <- get_data("butterflies")
+qroo3 <- read.csv("ButterfliesQRoo2.csv", stringsAsFactors = TRUE)
 sites <- c("HD", "SD", "GA", "YA", "MA", "OA", "PF")
 qroo2 <- aggregate(qroo3[, sites], by = list(Pattern = qroo3$Pattern), FUN = sum)
 qroo  <- as.matrix(t(qroo2[, -1]))
@@ -193,14 +173,15 @@ cat("\nbutterfly table:", nrow(qroo), "sites x", ncol(qroo), "patterns\n")
 
 qr.ca  <- vegan::cca(qroo)
 qr.dca <- vegan::decorana(qroo)
-with_fig("08_ca_butterflies_evplot", evplot(qr.ca$CA$eig, "(Quintana Roo)"),
-         width = 8, height = 7)
+par(mfrow = c(1, 1))
+evplot(qr.ca$CA$eig, "(Quintana Roo)")
 
-with_fig("08_ca_butterflies", {
-  par(mfrow = c(1, 2))
-  plot(qr.ca,  main = "CA: the arch is the successional gradient")
-  plot(qr.dca, main = "Detrended")
-}, width = 12, height = 6)
+# Wide figure: widen the Plot pane, or open a sized device first --
+#   dev.new(width = 12, height = 6)
+op <- par(mfrow = c(1, 2))
+plot(qr.ca,  main = "CA: the arch is the successional gradient")
+plot(qr.dca, main = "Detrended")
+par(op)
 
 cat("\n[08_CorrespondenceAnalysis] CA is PCA under chi-square distance, it",
     "ordinates rows and columns simultaneously, and its arch is an artefact",
