@@ -361,12 +361,34 @@ along the eigenvectors of the covariance, lengths proportional to the square roo
 eigenvalues. Those eigenvectors are already the principal components of
 Chapter~\ref{ch:pca}, arrived at by drawing rather than by algebra.
 
-The same covariance matrix also generates data, through the affine property of the
-multivariate normal: if $\mathbf{\Sigma}=\mathbf{A}^{\!\top}\mathbf{A}$ is a Cholesky
-factorization and $\mathbf{z}\sim N(\mathbf{0},\mathbf{I})$, then
-$\mathbf{A}^{\!\top}\mathbf{z}+\boldsymbol{\mu}\sim N(\boldsymbol{\mu},\mathbf{\Sigma})$.
-Overlaying a simulated cloud on the observed points is a fast, purely visual goodness-of-fit
-check for the Gaussian assumption that discriminant analysis will later rely on.
+Colour encoding in these scatterplots must balance visual contrast with accessibility.
+Naive RGB choices (such as primary red, green, and blue) produce ambiguities for readers
+with color-vision deficiencies (CVD), especially deuteranopia. Color Universal Design
+palettes, such as the Okabe--Ito scheme \cite{Wong_2011}, systematically vary both hue
+and luminance, maintaining complete legibility across dichromatic vision.
+
+The covariance matrix also acts as a generative engine via the Cholesky factorization,
+which provides the matrix counterpart of the scalar square root. For any symmetric
+positive-definite covariance matrix $\mathbf{\Sigma}$, there exists an upper-triangular
+matrix $\mathbf{A}$ such that $\mathbf{\Sigma} = \mathbf{A}^{\!\top}\mathbf{A}$ (computed
+in R via \code{chol(Sigma)}). If $\mathbf{z} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$
+represents uncorrelated standard normal noise, the affine transformation
+$\mathbf{x} = \mathbf{A}^{\!\top}\mathbf{z} + \boldsymbol{\mu}$ yields:
+\begin{align}
+  \mathbb{E}[\mathbf{x}] &= \boldsymbol{\mu}, \\
+  \operatorname{Cov}(\mathbf{x}) &= \operatorname{Cov}(\mathbf{A}^{\!\top}\mathbf{z})
+  = \mathbf{A}^{\!\top}\operatorname{Cov}(\mathbf{z})\mathbf{A}
+  = \mathbf{A}^{\!\top}\mathbf{I}\mathbf{A}
+  = \mathbf{A}^{\!\top}\mathbf{A} = \mathbf{\Sigma}.
+\end{align}
+In data-matrix notation with $n$ rows of draws $\mathbf{Z} \in \mathbb{R}^{n \times p}$,
+the generated sample $\mathbf{X}_{\text{sim}} = \mathbf{Z}\mathbf{A} + \mathbf{1}\boldsymbol{\mu}^{\!\top}$
+shears and rotates the spherical white-noise cloud to match the empirical dispersion of the
+data. Geometrically, the same linear operator maps points on the unit circle
+$\{\mathbf{u} : \|\mathbf{u}\|^2 = 1\}$ to the bounding ellipse contour
+$(\mathbf{x} - \boldsymbol{\mu})^{\!\top} \mathbf{\Sigma}^{-1} (\mathbf{x} - \boldsymbol{\mu}) = d^2$.
+Inspecting the fitted object via \code{fix(h)} or \code{unclass(h)} reveals these parameters
+(\code{\$loc}, \code{\$cov}, \code{\$d2}) directly.
 
 \begin{lstlisting}
 h <- cluster::ellipsoidhull(as.matrix(X[grp == g, 1:2]))
@@ -378,9 +400,9 @@ lines(predict(h))
 
 \begin{figure}[htbp]\centering
   \includegraphics[width=0.72\linewidth]{02_ellipsoid_hulls.png}
-  \caption{Minimum-volume ellipsoid per species, with a cloud simulated from the same
-  centroid and covariance. Where the cloud and the data disagree in shape, the Gaussian
-  assumption is doing poorly.}
+  \caption{Minimum-volume ellipsoid per species (Okabe--Ito palette), with a cloud
+  simulated from the same centroid and covariance via Cholesky factorization. Where the
+  cloud and the data disagree in shape, the Gaussian assumption is doing poorly.}
   \label{fig:ellipse}
 \end{figure}
 

@@ -88,6 +88,11 @@ if (file.exists(csv)) {
 ## ---- interrogating the object -----------------------------------------------
 m <- get_data("iris")
 
+## First look at the data: the raw table.
+## fix(m) opens an interactive spreadsheet viewer/editor in interactive R/RStudio.
+## In non-interactive batch runs, we interrogate the object structure programmatically.
+if (interactive()) fix(m)
+
 cat("mode:", mode(m), " class:", class(m), "\n")
 cat("dim :", nrow(m), "rows x", ncol(m), "columns\n\n")
 print(head(m))
@@ -97,16 +102,38 @@ cat("\nGroups in the last column:\n"); print(unique(m$Species))
 
 X   <- m[, 1:4]                                  # the numeric matrix
 grp <- factor(m$Species)                         # the grouping factor
-pal <- c("#8c2d3a", "#1f3b73", "#2a7f7f")        # one colour per species
 
-## ---- 2. The scatterplot, plain and grouped ---------------------------------
+## ---- 2. Color palettes: aesthetics and accessibility -----------------------
+## Choosing colors is not merely cosmetic. In multivariate graphics, color
+## encodes categorical groupings or continuous projections.
+##
+## A naive palette like pure red/green/blue:
+##   pal_rgb <- c("#ff0000", "#00aa00", "#0000ff")
+## creates severe ambiguity for individuals with color-vision deficiencies (CVD),
+## such as deuteranopia (red-green blindness, affecting ~8% of males).
+##
+## Modern R (>= 4.0) provides built-in color-blind friendly palettes:
+##   palette.pals()                                   # lists available palettes
+##   palette.colors(n = 3, palette = "Okabe-Ito")    # Color Universal Design (CUD)
+##
+## The Okabe-Ito palette (Wong 2011, Nature Methods) separates colors across
+## both hue and luminance, remaining legible under all common forms of CVD:
+pal_okabe <- c("#E69F00", "#56B4E9", "#009E73")   # orange, sky blue, bluish green
+## Paul Tol's qualitative palette is another robust alternative:
+pal_tol   <- c("#EE6677", "#228833", "#4477AA")   # rose, green, indigo
+## For continuous/gradient metrics, perceptually uniform palettes include:
+##   hcl.colors(n = 5, palette = "Viridis") or "Cividis" (CVD-optimized)
+
+pal <- pal_okabe                                   # use Okabe-Ito as primary
+
+## ---- 2b. The scatterplot, plain and grouped --------------------------------
 ## The plain version answers "is there structure?"; the grouped version answers
 ## "is the structure the one I already know about?" — the difference between
 ## unsupervised and supervised thinking, in two lines of code.
 with_fig("02_scatter_grouped", {
   par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
   plot(X[, 1:2], pch = 19, col = "grey40", main = "No grouping")
-  plot(X[, 1:2], pch = 19, col = pal[grp],  main = "Coloured by species")
+  plot(X[, 1:2], pch = 19, col = pal[grp],  main = "Coloured by species (Okabe-Ito)")
   legend("topright", legend = levels(grp), fill = pal, bty = "n", cex = .8)
 }, width = 10, height = 5)
 
@@ -119,10 +146,70 @@ hulls <- lapply(levels(grp), function(g)
   cluster::ellipsoidhull(as.matrix(X[grp == g, 1:2])))
 names(hulls) <- levels(grp)
 
-## The same covariance matrix also GENERATES data, via the affine property of
-## the multivariate normal: if Sigma = A'A (Cholesky) and z ~ N(0, I), then
-## A'z + mu ~ N(mu, Sigma). Overlaying such a cloud on the real points is a
-## quick visual test of how well a Gaussian describes each species.
+## Inspecting the mathematical object: the utility of fix()
+## What is inside an ellipsoid hull object?
+## Running fix(hulls) or fix(hulls[[1]]) opens an interactive inspector/editor
+## revealing the exact components computed by the optimization algorithm:
+##   $loc : Centroid vector (mu_x, mu_y) -- center of mass
+##   $cov : 2x2 covariance matrix (Sigma) -- orientation and dispersion
+##   $d2  : Squared Mahalanobis distance scale factor (d^2 = p = 2)
+##   $wt  : Observation weights on the hull boundary
+## In code, unclass() or str() inspects these components programmatically:
+cat("\nFitted parameters for Iris setosa ellipsoid hull:\n")
+cat("Centroid ($loc):\n"); print(round(hulls$setosa$loc, 3))
+cat("Covariance matrix ($cov):\n"); print(round(hulls$setosa$cov, 3))
+cat("Scale factor ($d2):", round(hulls$setosa$d2, 3), "\n")
+if (interactive()) {
+  ## Inspect or tweak parameters interactively in RStudio/X11:
+  fix(hulls)
+}
+
+## ---- 3b. The Cholesky decomposition: theory, simulation & geometry ---------
+## The covariance matrix Sigma is symmetric positive-definite. The Cholesky
+## factorization decomposes it into:
+##
+##         Sigma = A' A   (in R: A <- chol(Sigma) is upper triangular)
+##
+## Why is this the "square root" of covariance?
+## If z ~ N(0, I) is uncorrelated standard Gaussian noise, then the affine
+## transformation:
+##
+##         x = A' z + mu
+##
+## has:
+##   E[x]   = mu
+##   Cov(x) = Cov(A' z) = A' Cov(z) A = A' I A = A' A = Sigma
+##
+## For an n x p matrix of standard normal draws Z (n rows, p columns):
+##         X_sim = Z %*% A + matrix(mu, n, p, byrow = TRUE)
+
+## 1. Verify the matrix factorization numerically:
+Sigma_set <- hulls$setosa$cov
+A_set     <- chol(Sigma_set)
+cat("\nCholesky factor A for setosa (upper triangular):\n")
+print(round(A_set, 4))
+cat("Reconstructed Sigma = t(A) %*% A matches original:",
+    isTRUE(all.equal(t(A_set) %*% A_set, Sigma_set)), "\n")
+
+## 2. Geometric mapping: transforming the unit circle into the bounding ellipse
+## Parameterize the unit circle: u(theta) = (cos(theta), sin(theta))
+## Under the Cholesky factor scaled by sqrt(d2):
+##   x(theta) = sqrt(d2) * (u %*% A) + mu
+## Every point x on this curve satisfies the quadratic form:
+##   (x - mu)' Sigma^{-1} (x - mu) = d2 * u A (A' A)^{-1} A' u' = d2 * ||u||^2 = d2
+## tracing the exact theoretical boundary of the minimum-volume ellipsoid!
+theta <- seq(0, 2 * pi, length.out = 100)
+unit_circle <- cbind(cos(theta), sin(theta))
+chol_boundary <- sqrt(hulls$setosa$d2) * (unit_circle %*% A_set) +
+  matrix(hulls$setosa$loc, length(theta), 2, byrow = TRUE)
+
+## Verify that all transformed circle points lie exactly on Mahalanobis contour d2:
+diffs <- chol_boundary - matrix(hulls$setosa$loc, length(theta), 2, byrow = TRUE)
+maha_sq <- rowSums((diffs %*% solve(Sigma_set)) * diffs)
+cat("Cholesky boundary points lie exactly on contour d^2 =", hulls$setosa$d2, ":",
+    isTRUE(all.equal(maha_sq, rep(hulls$setosa$d2, length(theta)))), "\n")
+
+## 3. Simulating Gaussian clouds per species:
 sim_cloud <- function(h, n = 4000) {
   A <- chol(h$cov)
   matrix(rnorm(2 * n), n, 2) %*% A +
@@ -130,8 +217,15 @@ sim_cloud <- function(h, n = 4000) {
 }
 set.seed(1998)
 
+## 4. Empirical verification: simulated sample covariance converges to Sigma
+cloud_setosa <- sim_cloud(hulls$setosa, n = 10000)
+cat("\nEmpirical covariance of 10,000 simulated points vs true cov:\n")
+print(round(cov(cloud_setosa), 3))
+print(round(hulls$setosa$cov, 3))
+
 with_fig("02_ellipsoid_hulls", {
-  plot(X[, 1:2], type = "n", main = "Ellipsoid hulls and simulated Gaussians")
+  plot(X[, 1:2], type = "n",
+       main = "Ellipsoid hulls and Cholesky-simulated Gaussians")
   for (i in seq_along(hulls)) {
     points(sim_cloud(hulls[[i]]), col = pal[i], pch = ".")
     lines(predict(hulls[[i]]), col = pal[i], lwd = 2)

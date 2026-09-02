@@ -107,6 +107,7 @@ if (has3d) {
   ## makes it possible to add ordinary text() labels to a 3-D plot.
   co <- s3d$xyz.convert(M[, c("AmphRich", "Rept_rich", "BirdRich")])
   text(co$x, co$y, labels = rownames(M), cex = .8, pos = 3)
+
 }
 
 ## ---- 3. Scatterplot matrices with structure added --------------------------
