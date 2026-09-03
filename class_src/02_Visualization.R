@@ -101,7 +101,7 @@ grp <- factor(m$Species)                         # the grouping factor
 ##
 ## The Okabe-Ito palette (Wong 2011, Nature Methods) separates colors across
 ## both hue and luminance, remaining legible under all common forms of CVD:
-pal_okabe <- c("#E69F00", "#56B4E9", "#009E73")   # orange, sky blue, bluish green
+pal_okabe <- c("#E69F00", "#56B4E9", "#CC79A6")   # orange, sky blue, vermillion
 ## Paul Tol's qualitative palette is another robust alternative:
 pal_tol   <- c("#EE6677", "#228833", "#4477AA")   # rose, green, indigo
 ## For continuous/gradient metrics, perceptually uniform palettes include:
@@ -116,7 +116,7 @@ pal <- pal_okabe                                   # use Okabe-Ito as primary
 op <- par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
 plot(X[, 1:2], pch = 19, col = "grey40", main = "No grouping")
 plot(X[, 1:2], pch = 19, col = pal[grp],  main = "Coloured by species (Okabe-Ito)")
-legend("topright", legend = levels(grp), fill = pal, bty = "n", cex = .8)
+legend("topright", legend = levels(grp), fill = pal, bty = "n", cex = .8) 
 par(op)
 
 ## ---- 3. Ellipsoid hulls: the first multivariate summary --------------------
@@ -260,3 +260,4 @@ utils::write.csv(out, dest_csv, row.names = FALSE)
 cat("\nWrote", dest_txt, "\n      ", dest_csv, "\n")
 
 cat("\n[02_Visualization] done.\n")
+
