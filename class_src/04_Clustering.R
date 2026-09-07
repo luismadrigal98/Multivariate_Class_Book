@@ -310,8 +310,10 @@ rect.hclust(tree, k = 3, border = c("#1f3b73", "#8c2d3a", "#2a7f7f"))
 if (requireNamespace("pvclust", quietly = TRUE)) {
   set.seed(1998)
   nb <- getOption("msljmr.nboot", 500)     # raise to 5000 for a final figure
-  dcb <- pvclust::pvclust(t(mda), method.hclust = "ward.D",
-                          use.cor = "all.obs", nboot = nb, quiet = TRUE)
+  ## Use standardized variables and Euclidean distance to match tree above
+  ## and avoid non-finite correlation matrices on small resamples.
+  dcb <- pvclust::pvclust(t(mds), method.hclust = "ward.D",
+                          method.dist = "euclidean", nboot = nb, quiet = TRUE)
   par(mfrow = c(1, 1))
   plot(dcb, cex.axis = 1.2, main = "Diversity: AU / BP support")
   pvclust::pvrect(dcb, alpha = 0.95)
@@ -334,8 +336,8 @@ cat("\nSite order along the Ward tree:", paste(sbut$labels[sbut$order],
 
 if (requireNamespace("pvclust", quietly = TRUE)) {
   set.seed(1998)
-  pvbut <- pvclust::pvclust(t(tagg), method.hclust = "ward.D",
-                            use.cor = "all.obs",
+  pvbut <- pvclust::pvclust(t(mbut), method.hclust = "ward.D",
+                            method.dist = "euclidean",
                             nboot = getOption("msljmr.nboot", 500), quiet = TRUE)
   par(mfrow = c(1, 1))
   plot(pvbut, xlab = "Quintana Roo sites", main = "", cex.axis = 1.2)
