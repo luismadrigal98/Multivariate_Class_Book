@@ -98,14 +98,14 @@ cat("Regional means:\n"); print(round(M[, rich], 1))
 if (has3d) {
   par(mfrow = c(1, 1))
   s3d <- scatterplot3d::scatterplot3d(
-    M[, c("AmphRich", "Rept_rich", "BirdRich")],
+    M[, c("DensAmphRich", "DensRept_rich", "DensBirdRich")],
     pch = 19, color = "#1f3b73",
     type = "h",              # drop lines to the floor: restores depth cues
     xlab = "Amphibians", ylab = "Reptiles", zlab = "Birds",
-    main = "Mean richness by world region", box = FALSE, angle = 25)
+    main = "Mean density richness by world region", box = FALSE, angle = 25)
   ## xyz.convert() maps the 3-D coordinates onto the 2-D page, which is what
   ## makes it possible to add ordinary text() labels to a 3-D plot.
-  co <- s3d$xyz.convert(M[, c("AmphRich", "Rept_rich", "BirdRich")])
+  co <- s3d$xyz.convert(M[, c("DensAmphRich", "DensRept_rich", "DensBirdRich")])
   text(co$x, co$y, labels = rownames(M), cex = .8, pos = 3)
 
 }
@@ -175,14 +175,14 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
   ## ggplot() returns an OBJECT. At the console it prints itself and you see the
   ## plot; inside a function or a loop you must print() it explicitly, or
   ## nothing is drawn. This catches everyone once.
-  p1 <- ggplot(m3, aes(x = Biodiversity))
+  p1 <- ggplot(data = m3, mapping = aes(x = Biodiversity))
 
   par(mfrow = c(1, 1))
   print(p1 + geom_histogram(colour = "black", fill = "#e8c33a", bins = 30) +
           theme_bw(base_size = 14) +
           labs(title = "One geom, one variable")) #+
           #theme(panel.grid = element_blank())
-
+my_theme <- theme_bw() + theme(panel.grid = element_blank())
 
   ## the same mapping, a different geom: density instead of counts
   par(mfrow = c(1, 1))
@@ -191,7 +191,7 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
           labs(title = "geom_density: the smoothed version")) #+
     #my_theme
   
-  #my_theme <- theme_bw() + theme(panel.grid = element_blank())
+  my_theme <- theme_bw() + theme(panel.grid = element_blank())
 
   ## ---- boxplots against a categorical variable -----------------------------
   ##  Hinges are the 1st and 3rd quartiles; whiskers reach the furthest point
@@ -202,7 +202,7 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
   par(mfrow = c(1, 1))
   print(ggplot(data = m3, mapping = aes(x = RegionCode, y = Biodiversity)) +
           geom_boxplot(outlier.shape = 3, notch = FALSE) +
-          theme_bw(base_size = 13) +
+          my_theme +
           labs(title = "Biodiversity by world region"))
 
 
@@ -225,7 +225,7 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
           geom_point(aes(colour = GDPgroup)) +
           stat_smooth(method = lm, formula = y ~ x,
                       colour = "#8c2d3a", fill = "#e8c33a") +
-          facet_wrap(~ RegionCode, scales = 'free') + theme_bw(base_size = 11) +
+          facet_wrap(~ RegionCode, scales = 'free') + my_theme +
           labs(title = "Wealth vs biodiversity, one panel per region"))
 
 
@@ -234,7 +234,7 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
   print(ggplot(m3, aes(x = Governance, y = Biodiversity)) +
           geom_point(aes(colour = RegionCode)) +
           stat_smooth(method = lm, formula = y ~ x, colour = "#8c2d3a") +
-          facet_grid(Landlock ~ GDPgroup) + theme_bw(base_size = 11) +
+          facet_grid(Landlock ~ GDPgroup) + my_theme +
           labs(title = "Landlocked (rows) x GDP group (columns)"))
 
 
