@@ -170,7 +170,6 @@ par(mfrow = c(1, 1))
 plot(sbut, main = "Ward clustering of Quintana Roo sites", xlab = "", sub = "")
 rect.hclust(sbut, k = 3, border = c("#1f3b73", "#8c2d3a", "#2a7f7f"))
 
-
 ## ============================================================================
 ##  B3. Seeing the Biology: Functional Wing Patterns Across Clusters
 ## ============================================================================
@@ -225,7 +224,6 @@ p_but <- ggplot(df_long, aes(x = Site, y = Pattern)) +
     y = "Functional Wing Pattern"
   )
 print(p_but)
-
 
 ## ============================================================================
 ##  B4. Tree Reliability: pvclust Bootstrap Support
