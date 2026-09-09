@@ -155,4 +155,3 @@ lines(ellipse::ellipse(cov2, centre = c(0, 0), level = 0.95), lwd = 2)
 
 cat("\n[05_LinearAlgebra] eigenvectors of the covariance matrix are the",
     "principal axes; eigenvalues are the variances along them (this IS PCA).\n")
-

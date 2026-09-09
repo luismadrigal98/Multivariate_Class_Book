@@ -49,7 +49,7 @@ hascar <- requireNamespace("car", quietly = TRUE)
 
 ## ---- 1. Three dimensions, drawn honestly -----------------------------------
 
-pal  <- c("#E69F00", "#56B4E9", "#CC79A6")
+pal  <- c("#8c2d3a", "#1f3b73", "#2a7f7f")
 
 if (has3d) {
   # Wide figure: widen the Plot pane, or open a sized device first --
@@ -83,7 +83,7 @@ if (has3d) {
 ## 186 countries is too many points to label. Aggregating to world regions
 ## turns an unreadable cloud into eight labelled points — the same move
 ## 04_Clustering.R makes before hierarchical clustering, and the same columns.
-biodiv <- read.csv("data/BiodivCountries.csv", stringsAsFactors = TRUE)
+biodiv <- read.csv("BiodivCountries.csv", stringsAsFactors = TRUE)
 rich   <- c("AmphRich", "Rept_rich", "BirdRich", "MamsRich")
 dens   <- c("DensAmphRich", "DensRept_rich", "DensBirdRich", "DensMamsRich")
 
@@ -98,14 +98,14 @@ cat("Regional means:\n"); print(round(M[, rich], 1))
 if (has3d) {
   par(mfrow = c(1, 1))
   s3d <- scatterplot3d::scatterplot3d(
-    M[, c("DensAmphRich", "DensRept_rich", "DensBirdRich")],
+    M[, c("AmphRich", "Rept_rich", "BirdRich")],
     pch = 19, color = "#1f3b73",
     type = "h",              # drop lines to the floor: restores depth cues
     xlab = "Amphibians", ylab = "Reptiles", zlab = "Birds",
-    main = "Mean density richness by world region", box = FALSE, angle = 25)
+    main = "Mean richness by world region", box = FALSE, angle = 25)
   ## xyz.convert() maps the 3-D coordinates onto the 2-D page, which is what
   ## makes it possible to add ordinary text() labels to a 3-D plot.
-  co <- s3d$xyz.convert(M[, c("DensAmphRich", "DensRept_rich", "DensBirdRich")])
+  co <- s3d$xyz.convert(M[, c("AmphRich", "Rept_rich", "BirdRich")])
   text(co$x, co$y, labels = rownames(M), cex = .8, pos = 3)
 
 }
@@ -168,30 +168,27 @@ if (has3d) {
 ##  variables (86.7%), Wealth 3 (55.7%) and Capacity_no_GEF 19 (55.3%).
 if (requireNamespace("ggplot2", quietly = TRUE)) {
   library(ggplot2)
-  m3 <- read.csv("data/BiodiversityCountriesPCValues.csv", stringsAsFactors = TRUE)
+  m3 <- read.csv("BiodiversityCountriesPCValues.csv", stringsAsFactors = TRUE)
   cat("\nBiodiversity PC table:", nrow(m3), "countries x", ncol(m3), "columns\n")
   cat("  ", paste(names(m3), collapse = ", "), "\n")
 
   ## ggplot() returns an OBJECT. At the console it prints itself and you see the
   ## plot; inside a function or a loop you must print() it explicitly, or
   ## nothing is drawn. This catches everyone once.
-  p1 <- ggplot(data = m3, mapping = aes(x = Biodiversity))
+  p1 <- ggplot(m3, aes(x = Biodiversity))
 
   par(mfrow = c(1, 1))
   print(p1 + geom_histogram(colour = "black", fill = "#e8c33a", bins = 30) +
           theme_bw(base_size = 14) +
-          labs(title = "One geom, one variable")) #+
-          #theme(panel.grid = element_blank())
-my_theme <- theme_bw() + theme(panel.grid = element_blank())
+          labs(title = "One geom, one variable"))
+
 
   ## the same mapping, a different geom: density instead of counts
   par(mfrow = c(1, 1))
   print(p1 + geom_density(colour = "black", linewidth = 1.2, fill = "#2a7f7f") +
           theme_bw(base_size = 14) +
-          labs(title = "geom_density: the smoothed version")) #+
-    #my_theme
-  
-  my_theme <- theme_bw() + theme(panel.grid = element_blank())
+          labs(title = "geom_density: the smoothed version"))
+
 
   ## ---- boxplots against a categorical variable -----------------------------
   ##  Hinges are the 1st and 3rd quartiles; whiskers reach the furthest point
@@ -200,9 +197,9 @@ my_theme <- theme_bw() + theme(panel.grid = element_blank())
   ##  for the median, so non-overlapping notches suggest different medians
   ##  (McGill et al. 1978).
   par(mfrow = c(1, 1))
-  print(ggplot(data = m3, mapping = aes(x = RegionCode, y = Biodiversity)) +
-          geom_boxplot(outlier.shape = 3, notch = FALSE) +
-          my_theme +
+  print(ggplot(m3, aes(x = RegionCode, y = Biodiversity)) +
+          geom_boxplot(outlier.shape = 3, notch = TRUE) +
+          theme_bw(base_size = 13) +
           labs(title = "Biodiversity by world region"))
 
 
@@ -225,7 +222,7 @@ my_theme <- theme_bw() + theme(panel.grid = element_blank())
           geom_point(aes(colour = GDPgroup)) +
           stat_smooth(method = lm, formula = y ~ x,
                       colour = "#8c2d3a", fill = "#e8c33a") +
-          facet_wrap(~ RegionCode, scales = 'free') + my_theme +
+          facet_wrap(~ RegionCode) + theme_bw(base_size = 11) +
           labs(title = "Wealth vs biodiversity, one panel per region"))
 
 
@@ -234,7 +231,7 @@ my_theme <- theme_bw() + theme(panel.grid = element_blank())
   print(ggplot(m3, aes(x = Governance, y = Biodiversity)) +
           geom_point(aes(colour = RegionCode)) +
           stat_smooth(method = lm, formula = y ~ x, colour = "#8c2d3a") +
-          facet_grid(Landlock ~ GDPgroup) + my_theme +
+          facet_grid(Landlock ~ GDPgroup) + theme_bw(base_size = 11) +
           labs(title = "Landlocked (rows) x GDP group (columns)"))
 
 
