@@ -8,12 +8,13 @@
 ##  Revised from 05_kmeans_clustering_QRoo_Iris.R and 06_Hierarchical_Clustering.R
 ## ============================================================================
 
-##  PLAIN CLASSROOM EDITION (Streamlined 45-Minute Lecture)
+##  PLAIN CLASSROOM EDITION
 ## ============================================================================
 
 # R packages required
-# install.packages(c("vegan", "pvclust"))
+# install.packages(c("vegan", "pvclust", "ggplot2"))
 library(vegan)
+library(ggplot2)
 
 # Built-in dataset used for elbow & ground-truth validation
 data(iris)
@@ -63,7 +64,6 @@ kmsites3 <- kmeans(tagg, centers = 3, nstart = 25)
 cat("\nk = 3 site clusters (Disturbed / Intermediate Acahual / Forest):\n")
 print(kmsites3$cluster)
 cat("Within-cluster sums of squares:", round(kmsites3$withinss, 1), "\n")
-
 
 ## ============================================================================
 ##  A2. Choosing k & Ground-Truth Validation (iris)
@@ -116,7 +116,6 @@ cat("\nCross-tabulation (k = 4 vs. Species):\n")
 print(table(cluster = fit4$cluster, species = iris$Species))
 ## k = 4 splits one real species in two. Lower WSS does not mean better biology!
 
-
 ## ############################################################################
 ##  PART B -- HIERARCHICAL CLUSTERING
 ## ############################################################################
@@ -146,7 +145,6 @@ cat("\nSite order along the standardized Ward tree:\n",
     paste(sbut$labels[sbut$order], collapse = " -> "), "\n")
 ## The hurricane successional sequence (HD -> SD -> GA -> YA -> MA -> OA -> PF) is reconstructed!
 
-
 ## ============================================================================
 ##  B2. Linkage Rules & Tree Cutting
 ## ============================================================================
@@ -174,7 +172,63 @@ rect.hclust(sbut, k = 3, border = c("#1f3b73", "#8c2d3a", "#2a7f7f"))
 
 
 ## ============================================================================
-##  B3. Tree Reliability: pvclust Bootstrap Support
+##  B3. Seeing the Biology: Functional Wing Patterns Across Clusters
+## ============================================================================
+##  Why did the sites cluster this way? We plot the functional wing-pattern
+##  profiles across the successional gradient and the 3 clusters.
+site_order <- c("HD", "SD", "GA", "YA", "MA", "OA", "PF")
+cluster_levels <- c("Disturbed", "Acahual", "Mature Forest")
+site_clusters <- c(
+  HD = "Disturbed", SD = "Disturbed", GA = "Disturbed",
+  YA = "Acahual", MA = "Acahual",
+  OA = "Mature Forest", PF = "Mature Forest"
+)
+
+site_info <- data.frame(
+  Site    = factor(site_order, levels = site_order),
+  Cluster = factor(site_clusters[site_order], levels = cluster_levels)
+)
+
+df_long <- expand.grid(Site = factor(site_order, levels = site_order),
+                       Pattern = colnames(tagg))
+df_long$Z_score <- mapply(function(s, p) mbut_std[as.character(s), as.character(p)],
+                          df_long$Site, df_long$Pattern)
+df_long$Count   <- mapply(function(s, p) tagg[as.character(s), as.character(p)],
+                          df_long$Site, df_long$Pattern)
+df_long <- merge(df_long, site_info, by = "Site")
+
+# Order patterns along the successional gradient (early -> mature)
+site_ranks <- setNames(1:7, site_order)
+pattern_score <- sapply(colnames(tagg), function(p) sum(tagg[, p] * site_ranks) / sum(tagg[, p]))
+df_long$Pattern <- factor(df_long$Pattern, levels = names(sort(pattern_score)))
+
+p_but <- ggplot(df_long, aes(x = Site, y = Pattern)) +
+  geom_point(aes(size = Count, color = Z_score)) +
+  scale_size_area(max_size = 11, breaks = c(10, 100, 300, 600), name = "Specimens\n(Count)") +
+  scale_color_gradient2(low = "#2a7f7f", mid = "#e0e0e0", high = "#8c2d3a", midpoint = 0,
+                        name = "Standardized\nAbundance (Z)") +
+  facet_grid(~ Cluster, scales = "free_x", space = "free_x") +
+  theme_bw(base_size = 12) +
+  theme(
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(face = "bold", size = 11, color = "#1f3b73"),
+    strip.background = element_rect(fill = "#f0f2f5", color = "#cccccc"),
+    axis.text.x = element_text(face = "bold", size = 11),
+    axis.text.y = element_text(face = "bold", size = 10),
+    plot.title = element_text(face = "bold", size = 13, color = "#1f3b73"),
+    plot.subtitle = element_text(size = 10, color = "#444444")
+  ) +
+  labs(
+    title = "Functional Wing Patterns Across Forest Succession & Habitat Clusters",
+    subtitle = "De la Maza & Soberon (1998): Canopy closure selects for dark/reflective patterns; open ground selects for sand/shrub",
+    x = "Successional Gradient: Disturbed (HD, SD, GA) -> Acahual (YA, MA) -> Mature Forest (OA, PF)",
+    y = "Functional Wing Pattern"
+  )
+print(p_but)
+
+
+## ============================================================================
+##  B4. Tree Reliability: pvclust Bootstrap Support
 ## ============================================================================
 ##  A dendrogram ALWAYS draws branches, even from random noise.
 ##  pvclust bootstraps variables (columns) and reports two values:
