@@ -356,9 +356,27 @@ with_fig("04_hclust_butterflies", {
        main = "Sites clustered by wing-pattern composition", cex.axis = 1.2)
 })
 
-## Does the tree recover the successional gradient HD -> PF?
-cat("\nSite order along the Ward tree:", paste(sbut$labels[sbut$order],
-                                               collapse = " -> "), "\n")
+## ---- does the tree recover the successional gradient HD -> PF? -------------
+##  Not readable from the leaf order. ?hclust defines $order as the permutation
+##  "suitable for plotting, in the sense that a cluster plot ... will not have
+##  crossings of the branches" -- a rule that does not pick a UNIQUE order, since
+##  any node may be flipped. This tree admits 2^6 = 64 of them and R's default
+##  is an arbitrary tie-break, so reading succession off it reads the tie-break.
+succ <- setNames(seq_along(sites), sites)          # HD = 1 ... PF = 7
+spear <- function(o) cor(succ[o], seq_along(o), method = "spearman")
+ord0  <- sbut$labels[sbut$order]
+dord  <- reorder(as.dendrogram(sbut), wts = succ[sbut$labels], agglo.FUN = mean)
+
+cat(sprintf("\ndefault $order: %s  (Spearman vs succession %+.2f)\n",
+            paste(ord0, collapse = " "), spear(ord0)))
+cat(sprintf("reorder()ed   : %s  (Spearman %+.2f)  -- same tree, chosen drawing\n",
+            paste(labels(dord), collapse = " "), spear(labels(dord))))
+
+##  Choosing among the admissible orders IS meaningful -- that is seriation --
+##  and at best this tree reaches 0.93. The exact sequence is unreachable:
+##  {SD,MA} is a clade here while succession puts them 2nd and 5th, so no flip
+##  separates them. What the tree does assert cleanly is a SPLIT, {OA,PF} against
+##  everything more disturbed, and that is the node the bootstrap below supports.
 
 if (has_pkg("pvclust")) {
   set.seed(1998)
