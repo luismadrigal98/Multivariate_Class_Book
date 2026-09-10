@@ -139,11 +139,33 @@ plot(hclust(dbut_std, method = "ward.D2"), xlab = "", sub = "",
      main = "Standardized (functional composition)")
 par(op)
 
-## Notice how the standardized tree recovers the successional gradient:
 sbut <- hclust(dbut_std, method = "ward.D2")
-cat("\nSite order along the standardized Ward tree:\n",
-    paste(sbut$labels[sbut$order], collapse = " -> "), "\n")
-## The hurricane successional sequence (HD -> SD -> GA -> YA -> MA -> OA -> PF) is reconstructed!
+
+## ---- careful: $order is for DRAWING, not for reading a gradient -------------
+##  ?hclust: $order is "the permutation ... suitable for plotting, in the sense
+##  that a cluster plot ... will not have crossings of the branches." That rule
+##  does not pick a unique order -- any node can be flipped -- so this tree has
+##  2^6 = 64 valid leaf orders and R's default is just one of them.
+succ <- setNames(seq_along(sites), sites)             # HD = 1 ... PF = 7
+ord0 <- sbut$labels[sbut$order]
+spear <- function(o) cor(succ[o], seq_along(o), method = "spearman")
+cat(sprintf("\ndefault $order : %s  (Spearman vs succession %+.2f)\n",
+            paste(ord0, collapse = " "), spear(ord0)))
+
+##  You may CHOOSE among those 64, though -- that is seriation, and reorder()
+##  does it from an external weight. Same tree, better drawing:
+dord <- reorder(as.dendrogram(sbut), wts = succ[sbut$labels], agglo.FUN = mean)
+cat(sprintf("reordered      : %s  (Spearman %+.2f)\n",
+            paste(labels(dord), collapse = " "), spear(labels(dord))))
+
+op <- par(mfrow = c(1, 2))
+plot(sbut, xlab = "", sub = "", main = "default $order")
+plot(dord, main = "reorder(wts = succession)")
+par(op)
+
+##  Best any of the 64 can do is 0.93 -- the exact sequence HD..PF is
+##  unreachable, because {SD,MA} is a clade and succession puts them 2nd and
+##  5th. That one disagreement is the weak node the bootstrap flags in B4.
 
 ## ============================================================================
 ##  B2. Linkage Rules & Tree Cutting
@@ -173,9 +195,14 @@ rect.hclust(sbut, k = 3, border = c("#1f3b73", "#8c2d3a", "#2a7f7f"))
 ## ============================================================================
 ##  B3. Seeing the Biology: Functional Wing Patterns Across Clusters
 ## ============================================================================
-##  Why did the sites cluster this way? We plot the functional wing-pattern
-##  profiles across the successional gradient and the 3 clusters.
-site_order <- c("HD", "SD", "GA", "YA", "MA", "OA", "PF")
+##  Why do the sites group the way they do? We plot the functional wing-pattern
+##  profiles across the successional gradient.
+##
+##  NB the panels below are the A PRIORI successional stages, not cutree()'s
+##  output -- the k = 3 cut puts YA alone and leaves MA with the disturbed sites:
+site_order <- sites
+cat("\nk = 3 cut:", paste(cutree(sbut, 3)[sites], collapse = " "),
+    " vs a priori stage: 1 1 1 2 2 3 3\n")
 cluster_levels <- c("Disturbed", "Acahual", "Mature Forest")
 site_clusters <- c(
   HD = "Disturbed", SD = "Disturbed", GA = "Disturbed",
@@ -206,7 +233,7 @@ p_but <- ggplot(df_long, aes(x = Site, y = Pattern)) +
   scale_size_area(max_size = 11, breaks = c(10, 100, 300, 600), name = "Specimens\n(Count)") +
   scale_color_gradient2(low = "#2a7f7f", mid = "#e0e0e0", high = "#8c2d3a", midpoint = 0,
                         name = "Standardized\nAbundance (Z)") +
-  facet_grid(~ Cluster, scales = "free_x", space = "free_x") +
+  facet_grid(~ Cluster, scales = "free_x", space = "free_x")   # a priori stage +
   theme_bw(base_size = 12) +
   theme(
     panel.grid.minor = element_blank(),
@@ -218,12 +245,47 @@ p_but <- ggplot(df_long, aes(x = Site, y = Pattern)) +
     plot.subtitle = element_text(size = 10, color = "#444444")
   ) +
   labs(
-    title = "Functional Wing Patterns Across Forest Succession & Habitat Clusters",
+    title = "Functional Wing Patterns Across Forest Succession",
     subtitle = "De la Maza & Soberon (1998): Canopy closure selects for dark/reflective patterns; open ground selects for sand/shrub",
     x = "Successional Gradient: Disturbed (HD, SD, GA) -> Acahual (YA, MA) -> Mature Forest (OA, PF)",
     y = "Functional Wing Pattern"
   )
 print(p_but)
+
+## ============================================================================
+##  B3b. Does k-means recover the gradient? Raw vs standardized
+## ============================================================================
+##  A partition tracks a gradient only if its groups are CONTIGUOUS blocks along
+##  it. Check both scalings, for k = 2 and 3.
+contig <- function(g) all(tapply(succ[names(g)], g,
+                                 function(r) max(r) - min(r) + 1 == length(r)))
+km <- do.call(rbind, lapply(2:3, function(k) {
+  set.seed(1998); gr <- kmeans(mbut_raw, k, nstart = 50)$cluster[sites]
+  set.seed(1998); gs <- kmeans(mbut_std, k, nstart = 50)$cluster[sites]
+  rbind(data.frame(k = paste("k =", k), Scaling = "Raw counts",   Site = sites,
+                   Cluster = factor(gr), ok = contig(gr)),
+        data.frame(k = paste("k =", k), Scaling = "Standardized", Site = sites,
+                   Cluster = factor(gs), ok = contig(gs)))
+}))
+km$Site <- factor(km$Site, levels = sites)
+print(unique(km[, c("k", "Scaling", "ok")]), row.names = FALSE)
+
+print(ggplot(km, aes(Site, Scaling, fill = Cluster)) +
+  geom_tile(colour = "white", linewidth = 1.2) +
+  geom_text(aes(label = Cluster), colour = "white", fontface = "bold") +
+  facet_wrap(~ k, ncol = 1) +
+  scale_fill_manual(values = c("#8c2d3a", "#1f3b73", "#2a7f7f")) +
+  theme_bw(base_size = 12) + theme(panel.grid = element_blank()) +
+  labs(title = "k-means along the successional gradient",
+       subtitle = "Contiguous blocks = the partition tracks succession",
+       x = "HD (disturbed) -> PF (primary forest)", y = NULL))
+
+##  The two scalings succeed at DIFFERENT k. Standardized gives the clean k = 2
+##  split (mature vs disturbed), the one the bootstrap supports at 100%. Raw
+##  counts look better at k = 3, but they sort sites by TOTAL CATCH -- 239
+##  individuals at HD to 2521 at PF, Spearman 0.93 -- abundance, not wing
+##  pattern. Scaling decides which gradient you find.
+cat("\ntotal specimens per site:\n"); print(rowSums(mbut_raw)[sites])
 
 ## ============================================================================
 ##  B4. Tree Reliability: pvclust Bootstrap Support
