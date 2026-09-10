@@ -100,6 +100,8 @@ plot(Xi[, 1:2], col = pal_sp[sp], pch = 19, main = "True Species (known)")
 legend("topright", legend = levels(sp), fill = pal_sp, bty = "n", cex = 0.8)
 plot(Xi[, 1:2], col = pal_cl[factor(fit3$cluster)], pch = 19,
      main = "k-means Clusters (k = 3)")
+legend("topright", legend = levels(factor(fit3$cluster)), 
+       fill = pal_cl , bty = "n", cex = 0.8)
 par(op)
 
 ## Confusion matrix and agreement metric
@@ -140,32 +142,6 @@ plot(hclust(dbut_std, method = "ward.D2"), xlab = "", sub = "",
 par(op)
 
 sbut <- hclust(dbut_std, method = "ward.D2")
-
-## ---- careful: $order is for DRAWING, not for reading a gradient -------------
-##  ?hclust: $order is "the permutation ... suitable for plotting, in the sense
-##  that a cluster plot ... will not have crossings of the branches." That rule
-##  does not pick a unique order -- any node can be flipped -- so this tree has
-##  2^6 = 64 valid leaf orders and R's default is just one of them.
-succ <- setNames(seq_along(sites), sites)             # HD = 1 ... PF = 7
-ord0 <- sbut$labels[sbut$order]
-spear <- function(o) cor(succ[o], seq_along(o), method = "spearman")
-cat(sprintf("\ndefault $order : %s  (Spearman vs succession %+.2f)\n",
-            paste(ord0, collapse = " "), spear(ord0)))
-
-##  You may CHOOSE among those 64, though -- that is seriation, and reorder()
-##  does it from an external weight. Same tree, better drawing:
-dord <- reorder(as.dendrogram(sbut), wts = succ[sbut$labels], agglo.FUN = mean)
-cat(sprintf("reordered      : %s  (Spearman %+.2f)\n",
-            paste(labels(dord), collapse = " "), spear(labels(dord))))
-
-op <- par(mfrow = c(1, 2))
-plot(sbut, xlab = "", sub = "", main = "default $order")
-plot(dord, main = "reorder(wts = succession)")
-par(op)
-
-##  Best any of the 64 can do is 0.93 -- the exact sequence HD..PF is
-##  unreachable, because {SD,MA} is a clade and succession puts them 2nd and
-##  5th. That one disagreement is the weak node the bootstrap flags in B4.
 
 ## ============================================================================
 ##  B2. Linkage Rules & Tree Cutting
@@ -236,9 +212,8 @@ p_but <- ggplot(df_long, aes(x = Site, y = Pattern)) +
   facet_grid(~ Cluster, scales = "free_x", space = "free_x")   # a priori stage +
   theme_bw(base_size = 12) +
   theme(
-    panel.grid.minor = element_blank(),
+    panel.grid = element_blank(),
     strip.text = element_text(face = "bold", size = 11, color = "#1f3b73"),
-    strip.background = element_rect(fill = "#f0f2f5", color = "#cccccc"),
     axis.text.x = element_text(face = "bold", size = 11),
     axis.text.y = element_text(face = "bold", size = 10),
     plot.title = element_text(face = "bold", size = 13, color = "#1f3b73"),
