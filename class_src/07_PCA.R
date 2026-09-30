@@ -206,7 +206,7 @@ par(op)
 ## axis -- but not always, which is the point of the next block.
 
 ## ============================================================================
-##  A3b. When is NOT centering an advantage?   (after J. Soberon, 30-Sep-2026)
+##  A3b. When is NOT centering an advantage?
 ## ============================================================================
 ##  Pielou notes that leaving data uncentered sometimes shows existing clusters
 ##  more clearly. Seven observations, three variables, two obvious groups
@@ -265,6 +265,7 @@ for (j in 1:3)
 cat("\nangle between uncentered PC1 and the mean vector:",
     round(acos(min(1, abs(sum(p_uu$rotation[, 1] * colMeans(mat)) /
                           sqrt(sum(colMeans(mat)^2))))) * 180 / pi, 1), "degrees\n")
+
 ##  i.e. uncentered PC1 is essentially the "size" axis. It separates THESE
 ##  groups because they differ in overall magnitude (about 11 against about 1).
 ##  Where two clusters differ in SHAPE but not in size, the same trick buys
