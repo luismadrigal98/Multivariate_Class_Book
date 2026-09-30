@@ -28,11 +28,11 @@
 ## ============================================================================
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: hanta_virtual.csv, vars.tif  (optional)
+#   This session reads, from data/: hanta_virtual.csv, vars.tif
 setwd("YOUR/DIRECTORY")
 
 ## ============================================================================
@@ -43,14 +43,14 @@ setwd("YOUR/DIRECTORY")
 ##  precipitation). The raster vars.tif carries the same two variables over the
 ##  continental USA, so a model fitted in environmental space can be projected
 ##  back into geography.
-occ <- read.csv("hanta_virtual.csv")
+occ <- read.csv("data/hanta_virtual.csv")
 cat("Detections:", sum(occ$Sp), "of", nrow(occ), "sites",
     "(prevalence =", round(mean(occ$Sp), 3), ")\n")
 print(head(occ))
 cat("\ncolumns:", paste(colnames(occ), collapse = ", "),
     "\n  Sp is the response; the rest are predictors\n")
 
-env_path <- "vars.tif"
+env_path <- "data/vars.tif"
 have_rast <- file.exists(env_path) && requireNamespace("terra", quietly = TRUE)
 if (have_rast) {
   env_vars <- terra::rast(env_path)

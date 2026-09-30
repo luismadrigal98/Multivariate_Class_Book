@@ -33,11 +33,11 @@ library(scatterplot3d)
 library(car)
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: BiodivCountries.csv, BiodiversityCountriesPCValues.csv
+#   This session reads, from data/: BiodivCountries.csv, BiodiversityCountriesPCValues.csv
 setwd("YOUR/DIRECTORY")
 
 # Built-in data sets used below
@@ -83,7 +83,7 @@ if (has3d) {
 ## 186 countries is too many points to label. Aggregating to world regions
 ## turns an unreadable cloud into eight labelled points — the same move
 ## 04_Clustering.R makes before hierarchical clustering, and the same columns.
-biodiv <- read.csv("BiodivCountries.csv", stringsAsFactors = TRUE)
+biodiv <- read.csv("data/BiodivCountries.csv", stringsAsFactors = TRUE)
 rich   <- c("AmphRich", "Rept_rich", "BirdRich", "MamsRich")
 dens   <- c("DensAmphRich", "DensRept_rich", "DensBirdRich", "DensMamsRich")
 
@@ -168,7 +168,7 @@ if (has3d) {
 ##  variables (86.7%), Wealth 3 (55.7%) and Capacity_no_GEF 19 (55.3%).
 if (requireNamespace("ggplot2", quietly = TRUE)) {
   library(ggplot2)
-  m3 <- read.csv("BiodiversityCountriesPCValues.csv", stringsAsFactors = TRUE)
+  m3 <- read.csv("data/BiodiversityCountriesPCValues.csv", stringsAsFactors = TRUE)
   cat("\nBiodiversity PC table:", nrow(m3), "countries x", ncol(m3), "columns\n")
   cat("  ", paste(names(m3), collapse = ", "), "\n")
 

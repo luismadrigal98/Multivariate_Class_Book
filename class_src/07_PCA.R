@@ -20,7 +20,12 @@
 ##  Run:  source("R/00_utils.R"); source("R/07_PCA.R")
 ## ============================================================================
 
+##  HAND-OWNED -- this file is maintained by hand and scripts/make_class_src.py
+##  will NOT regenerate it. Fixes made in R/ do not reach it automatically; apply
+##  them here too. Remove this line to hand the file back to the generator.
+##
 ##  PLAIN CLASSROOM EDITION
+##  Hand-owned because: the not-centering section (A3b) requested by J. Soberon, 30-Sep-2026
 ##  Generated from R/07_PCA.R by scripts/make_class_src.py --
 ##  edit R/07_PCA.R and regenerate; changes made here will be overwritten.
 ## ============================================================================
@@ -51,7 +56,7 @@ data(iris)
 ##  The running data set is Neotoma: 615 woodrat specimens, 101 variables --
 ##  skull landmarks in four blocks plus 19 bioclimatic variables at the
 ##  collection locality.
-m <- read.csv("NeotomaMorphoEnvir.csv", stringsAsFactors = TRUE)
+m <- read.csv("data/NeotomaMorphoEnvir.csv", stringsAsFactors = TRUE)
 cat("Neotoma table:", nrow(m), "specimens x", ncol(m), "variables\n")
 
 ## column blocks, selected by NAME rather than by position
@@ -183,6 +188,7 @@ pc_uu <- prcomp(bio4, retx = TRUE, center = FALSE, scale. = FALSE)
 pc_cu <- prcomp(bio4, retx = TRUE, center = TRUE,  scale. = FALSE)
 pc_us <- prcomp(bio4, retx = TRUE, center = FALSE, scale. = TRUE)
 pc_cs <- prcomp(bio4, retx = TRUE, center = TRUE,  scale. = TRUE)
+
 print(summary(pc_uu))
 print(summary(pc_cs))
 
@@ -195,12 +201,79 @@ plot(pc_us$x[, 1:2], pch = 19, cex = .3, main = "uncentered, scaled")
 plot(pc_cs$x[, 1:2], pch = 19, cex = .3, main = "centered, scaled")
 par(op)
 
-## Without centering, PC1 simply points at the centroid: the first component is
-## spent describing where the cloud is rather than how it is shaped.
+## Without centering, PC1 points at the centroid: the first component describes
+## where the cloud IS rather than how it is shaped. That is usually a waste of an
+## axis -- but not always, which is the point of the next block.
+
+## ============================================================================
+##  A3b. When is NOT centering an advantage?   (after J. Soberon, 30-Sep-2026)
+## ============================================================================
+##  Pielou notes that leaving data uncentered sometimes shows existing clusters
+##  more clearly. Seven observations, three variables, two obvious groups
+##  (rows 1-4 against rows 5-7):
+mat <- matrix(c(10, 11, 1,
+                12, 10, 2,
+                10, 12, 1,
+                11, 13, 2,
+                 0,  1, 3,
+                 1,  0, 2,
+                 0,  1, 0), ncol = 3, nrow = 7, byrow = TRUE)
+grp <- c(1, 1, 1, 1, 2, 2, 2)
+
+p_uu <- prcomp(mat, center = FALSE, scale. = FALSE)
+p_cu <- prcomp(mat, center = TRUE,  scale. = FALSE)
+p_us <- prcomp(mat, center = FALSE, scale. = TRUE)
+p_cs <- prcomp(mat, center = TRUE,  scale. = TRUE)
+
+##  Draw the four on COMMON axes. With free axes each panel auto-rescales, every
+##  version looks equally clustered, and the effect is invisible -- which is
+##  exactly why the grid above (bio4, free axes) does not show it.
+op <- par(mfrow = c(2, 2))
+lim <- c(-16, 16)
+plot(p_uu$x[, 1:2], col = grp, pch = 19, xlim = lim, ylim = lim, main = "uncentered, unscaled")
+plot(p_cu$x[, 1:2], col = grp, pch = 19, xlim = lim, ylim = lim, main = "centered, unscaled")
+plot(p_us$x[, 1:2], col = grp, pch = 19, xlim = lim, ylim = lim, main = "uncentered, scaled")
+plot(p_cs$x[, 1:2], col = grp, pch = 19, xlim = lim, ylim = lim, main = "centered, scaled")
+par(op)
+
+##  and measure it, so it is not an eyeball judgement: how far apart the two
+##  group centroids sit, in units of the average spread within a group.
+separation <- function(p) {
+  x <- p$x[, 1:2]
+  as.numeric(dist(rbind(colMeans(x[grp == 1, ]), colMeans(x[grp == 2, ])))) /
+    mean(c(mean(dist(x[grp == 1, ])), mean(dist(x[grp == 2, ]))))
+}
+cat("\ncluster separation (between centroids / mean spread within):\n")
+print(round(c("uncentered, unscaled" = separation(p_uu),
+              "centered, unscaled"   = separation(p_cu),
+              "uncentered, scaled"   = separation(p_us),
+              "centered, scaled"     = separation(p_cs)), 2))
+
+##  Read the four numbers rather than the four pictures. CENTERING costs almost
+##  nothing here (8.6 -> 8.3). SCALING is what destroys the clusters (-> 1.9).
+##
+##  The culprit is column 3. Its group means differ by 0.17, so it separates
+##  nothing, and it has the smallest standard deviation:
+cat("\nper column -- sd, and the group-mean difference it carries:\n")
+for (j in 1:3)
+  cat(sprintf("  col %d:  sd = %5.3f   |group mean difference| = %5.2f\n",
+              j, sd(mat[, j]), abs(mean(mat[grp == 1, j]) - mean(mat[grp == 2, j]))))
+##  scale() sets every sd to 1, which promotes that noise column to equal weight
+##  with the two that carry the signal. The clusters are diluted, not lost.
+
+##  Not centering genuinely does help, and for a nameable reason:
+cat("\nangle between uncentered PC1 and the mean vector:",
+    round(acos(min(1, abs(sum(p_uu$rotation[, 1] * colMeans(mat)) /
+                          sqrt(sum(colMeans(mat)^2))))) * 180 / pi, 1), "degrees\n")
+##  i.e. uncentered PC1 is essentially the "size" axis. It separates THESE
+##  groups because they differ in overall magnitude (about 11 against about 1).
+##  Where two clusters differ in SHAPE but not in size, the same trick buys
+##  nothing. So this is Pielou's occasional advantage -- worth knowing, not a
+##  default: center by habit, and drop the centering only when you can say why.
 cat("\nprcomp rotation (centered + scaled):\n")
 print(round(unclass(pc_cs$rotation), 3))
 
-cat("\nprincomp(cor=TRUE) and prcomp(scale.=TRUE) agree up to sign:",
+cat("\nprincomp(cor=TRUE) and prcomp(center.=TRUE, scale.=TRUE) agree up to sign:",
     isTRUE(all.equal(abs(unclass(princomp(bio4, cor = TRUE)$loadings)),
                      abs(unclass(pc_cs$rotation)), check.attributes = FALSE)), "\n")
 
@@ -427,7 +500,7 @@ print(vegan::ordiareatest(pcaI, groups = sp, area = "ellipse", permutations = 99
 ## ============================================================================
 ##  C2. Biplot of the biodiversity table
 ## ============================================================================
-bioC2 <- read.csv("BiodivCountries.csv", stringsAsFactors = TRUE)
+bioC2 <- read.csv("data/BiodivCountries.csv", stringsAsFactors = TRUE)
 richN <- c("AmphRich", "Rept_rich", "BirdRich", "MamsRich",
            "DensAmphRich", "DensRept_rich", "DensBirdRich", "DensMamsRich")
 bioC  <- na.omit(bioC2[, c("RegionCode", richN)])
@@ -483,7 +556,7 @@ if (requireNamespace("BiplotGUI", quietly = TRUE)) {
 ## ============================================================================
 ##  D1. Cities of Europe: distances you already know the answer to
 ## ============================================================================
-eur <- read.csv("CitiesEurope.csv", stringsAsFactors = TRUE)
+eur <- read.csv("data/CitiesEurope.csv", stringsAsFactors = TRUE)
 cat("\n", nrow(eur), "European cities\n")
 
 ##  Great-circle distance from longitude/latitude (haversine). terra::distance()
@@ -500,13 +573,18 @@ haversine <- function(lon, lat, R = 6371) {
 }
 eudist <- haversine(eur$Long, eur$Lat)
 attr(eudist, "Labels") <- as.character(eur$City)
-cat("Madrid-Berlin great-circle distance:",
-    round(as.matrix(eudist)[which(eur$City == "Madrid"),
-                            which(eur$City == "Berlin")]), "km\n")
+## (pick two cities that are actually in the file -- it has Madrid and Stockholm
+##  but no Berlin, and indexing with a name that is absent silently gives nothing)
+cat("Madrid-Stockholm great-circle distance:",
+    round(as.matrix(eudist)["Madrid", "Stockholm"]), "km\n")
 
 par(mfrow = c(1, 1))
-if (requireNamespace("maps", quietly = TRUE)) maps::map("world", xlim = range(eur$Long) + c(-5, 5),
-                               ylim = range(eur$Lat) + c(-5, 5), col = "grey70") else plot(eur$Long, eur$Lat, type = "n")
+## maps::map() fixes the aspect ratio to the projection. Asking it for a narrow
+## lon/lat window can demand a plot region bigger than the device, which is a
+## hard error -- so plot the points first and draw the coastline over them.
+plot(eur$Long, eur$Lat, type = "n", asp = 1, xlab = "longitude", ylab = "latitude")
+if (requireNamespace("maps", quietly = TRUE))
+  maps::map("world", add = TRUE, col = "grey70")
 points(eur$Long, eur$Lat, pch = 16, col = "red")
 text(eur$Long, eur$Lat, eur$City, cex = .7, pos = 3)
 title("The cities, in geography")
@@ -564,7 +642,7 @@ cat("\ncorrelation between original and recovered distances:",
 ##  with a validity weight d_jih that is 0 for excluded comparisons, so
 ##    G(i,h) = sum_j S_jih d_jih / sum_j d_jih
 ##  G is a similarity in [0, 1]; 1 - G is the dissimilarity.
-biodata <- read.csv("speciesCrawley3.csv", stringsAsFactors = TRUE)
+biodata <- read.csv("data/speciesCrawley3.csv", stringsAsFactors = TRUE)
 biodata$Species <- as.factor(biodata$Species)
 biodata$Soil    <- as.factor(biodata$Soil)
 biodata[, 2:5]  <- scale(biodata[, 2:5])
@@ -629,7 +707,7 @@ if (requireNamespace("ape", quietly = TRUE)) {
 ##  Data and the PCA recipe courtesy of Ben J. Wiens. A VCF of 10000 SNPs is
 ##  read into a genlight object; PCA runs on the allele counts, PCoA on a
 ##  distance matrix built from them.
-vcf_path <- "gen.10000.vcf"
+vcf_path <- "data/gen.10000.vcf"
 if (file.exists(vcf_path) && requireNamespace("vcfR", quietly = TRUE) && requireNamespace("adegenet", quietly = TRUE) && requireNamespace("ade4", quietly = TRUE) && requireNamespace("cluster", quietly = TRUE)) {
   vcf <- vcfR::read.vcfR(vcf_path, verbose = FALSE)
   gl  <- vcfR::vcfR2genlight(vcf)

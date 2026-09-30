@@ -20,11 +20,11 @@ library(vegan)
 library(ade4)
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: ButterfliesQRoo2.csv
+#   This session reads, from data/: ButterfliesQRoo2.csv
 setwd("YOUR/DIRECTORY")
 
 # Built-in data sets used below
@@ -167,7 +167,7 @@ par(op)
 ## ============================================================================
 ##  Sites x wing patterns, from session 04. Here the gradient is succession, and
 ##  the arch is almost entirely a consequence of it.
-qroo3 <- read.csv("ButterfliesQRoo2.csv", stringsAsFactors = TRUE)
+qroo3 <- read.csv("data/ButterfliesQRoo2.csv", stringsAsFactors = TRUE)
 sites <- c("HD", "SD", "GA", "YA", "MA", "OA", "PF")
 qroo2 <- aggregate(qroo3[, sites], by = list(Pattern = qroo3$Pattern), FUN = sum)
 qroo  <- as.matrix(t(qroo2[, -1]))

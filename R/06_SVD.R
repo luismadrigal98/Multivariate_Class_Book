@@ -76,9 +76,9 @@ rnk <- qr(G)$rank
 cat("\nRank from qr():", rnk, "  non-negligible singular values:",
     sum(s$d > max(dim(G)) * .Machine$double.eps * max(s$d)), "\n")
 
-d <- s$d[seq_len(min(nr, nc))]
-u <- as.matrix(s$u)
-v <- as.matrix(s$v)
+d <- s$d
+u <- s$u
+v <- s$v
 options(digits = 3)
 cat("first ten singular values:\n"); print(d[1:10])
 

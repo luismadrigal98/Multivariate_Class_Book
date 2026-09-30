@@ -244,12 +244,17 @@ correspondence between the three.
 
 ```bash
 python3 scripts/make_class_src.py     # regenerate after editing anything in R/
-bash   scripts/check_class_src.sh     # fail if class_src/ is stale
+bash   scripts/check_class_src.sh     # report staleness and hand-owned files
 ```
 
-Never edit `class_src/` by hand — the header of every file says so, and the next
-regeneration would discard the change. Fix it in `R/` and regenerate, so a
-correction reaches the class scripts and the book together.
+Fix things in `R/` and regenerate, so a correction reaches the class scripts and the
+book together.
+
+**Taking a class script over by hand.** Some sessions need class-only material the book
+does not want. Put a `HAND-OWNED` line in that file's header and the generator skips it
+from then on; `check_class_src.sh` lists such files separately so they never go quietly
+stale. The trade is real — fixes made in `R/` no longer reach them and must be applied by
+hand. Currently hand-owned: `04_Clustering.R`, `07_PCA.R`.
 
 The plain scripts open **no graphics device at all**: they call `plot()` and friends
 directly, which draws to whatever device is current — the Plot pane in RStudio. Because
@@ -258,8 +263,9 @@ states the layout it expects, so a `par(mfrow = c(2, 2))` cannot leak into the n
 figure. Figures that need a wide device carry a one-line comment with the
 `dev.new(width =, height =)` call that produces it.
 
-Each generated script lists the data files it needs, right under the `setwd()` line, so a
-session can be handed out as one script plus its data.
+Each generated script lists the data files it needs, right under the `setwd()` line. Data
+is read as `data/<file>` relative to that `setwd()`, so a session travels as one script plus
+a `data/` folder.
 
 ## Handing out single scripts
 

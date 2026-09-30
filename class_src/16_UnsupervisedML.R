@@ -25,17 +25,17 @@ library(Rtsne)
 library(uwot)
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: leukemiaExpressionSubset.rds
+#   This session reads, from data/: leukemiaExpressionSubset.rds
 setwd("YOUR/DIRECTORY")
 
 set.seed(1998)
 
 ## ---- Data: genes x samples -> samples x genes ------------------------------
-expr  <- readRDS("leukemiaExpressionSubset.rds")                    # matrix, rows = genes
+expr  <- readRDS("data/leukemiaExpressionSubset.rds")                    # matrix, rows = genes
 X     <- t(as.matrix(expr))                      # rows = samples
 type  <- factor(sub("\\..*$", "", rownames(X)))  # ALL / AML / CLL
 cols  <- c("#1f3b73", "#8c2d3a", "#2a7f7f")[type]

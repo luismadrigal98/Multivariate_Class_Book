@@ -526,14 +526,18 @@ haversine <- function(lon, lat, R = 6371) {
 }
 eudist <- haversine(eur$Long, eur$Lat)
 attr(eudist, "Labels") <- as.character(eur$City)
-cat("Madrid-Berlin great-circle distance:",
-    round(as.matrix(eudist)[which(eur$City == "Madrid"),
-                            which(eur$City == "Berlin")]), "km\n")
+## (index by names that are actually in the file -- it has Madrid and Stockholm
+##  but no Berlin, and indexing with an absent name silently yields nothing)
+cat("Madrid-Stockholm great-circle distance:",
+    round(as.matrix(eudist)["Madrid", "Stockholm"]), "km\n")
 
 with_fig("07_pcoa_cities_map", {
-  if (has_pkg("maps")) maps::map("world", xlim = range(eur$Long) + c(-5, 5),
-                                 ylim = range(eur$Lat) + c(-5, 5), col = "grey70")
-  else plot(eur$Long, eur$Lat, type = "n")
+  ## maps::map() fixes the aspect ratio to the projection, so a narrow lon/lat
+  ## window can demand a plot region larger than the device -- a hard error.
+  ## Plot the points first and draw the coastline over them.
+  plot(eur$Long, eur$Lat, type = "n", asp = 1,
+       xlab = "longitude", ylab = "latitude")
+  if (has_pkg("maps")) maps::map("world", add = TRUE, col = "grey70")
   points(eur$Long, eur$Lat, pch = 16, col = "red")
   text(eur$Long, eur$Lat, eur$City, cex = .7, pos = 3)
   title("The cities, in geography")

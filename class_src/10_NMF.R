@@ -21,11 +21,11 @@ library(NMF)
 library(ade4)
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: CountriesToLive.csv, leukemiaExpressionSubset.rds
+#   This session reads, from data/: CountriesToLive.csv, leukemiaExpressionSubset.rds
 setwd("YOUR/DIRECTORY")
 
 # Built-in data sets used below
@@ -50,7 +50,7 @@ data(doubs)          # the Verneaux river-fish tables
 ##  Unlike the SVD of session 06, this problem has no closed-form solution and
 ##  is not convex in W and H jointly, so nmf() runs an iterative algorithm from
 ##  a seed. Fix the seed or the answer moves.
-expr <- readRDS("leukemiaExpressionSubset.rds")             # genes x samples
+expr <- readRDS("data/leukemiaExpressionSubset.rds")             # genes x samples
 A    <- expr - min(expr)                 # ensure non-negativity
 type <- sub("\\..*$", "", colnames(expr))
 cat("expression matrix:", nrow(A), "genes x", ncol(A), "samples\n")
@@ -107,7 +107,7 @@ if (requireNamespace("Biobase", quietly = TRUE)) {
 ## ============================================================================
 ##  Thirteen countries ranked on six criteria. Small enough that you can read
 ##  the parts straight off the heatmaps.
-ctl2 <- read.csv("CountriesToLive.csv", stringsAsFactors = TRUE)
+ctl2 <- read.csv("data/CountriesToLive.csv", stringsAsFactors = TRUE)
 paises <- as.character(ctl2[[1]])
 ctl    <- as.matrix(t(ctl2[, -1]))
 colnames(ctl) <- paises

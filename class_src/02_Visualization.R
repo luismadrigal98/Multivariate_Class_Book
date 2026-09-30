@@ -32,11 +32,11 @@
 library(cluster)
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: iris.data.csv  (optional)
+#   This session reads, from data/: iris.data.csv
 setwd("YOUR/DIRECTORY")
 
 # Built-in data sets used below
@@ -52,7 +52,7 @@ cat("Working directory:", getwd(), "\n")
 ##  read.table() with header = TRUE and sep = "," already set. Both take a path
 ##  relative to getwd(), which is why hard-coded absolute paths (the original
 ##  scripts began with setwd("C:\\Users\\...")) break on everyone else's machine.
-csv <- "iris.data.csv"
+csv <- "data/iris.data.csv"
 if (file.exists(csv)) {
   m1 <- read.table(csv, header = TRUE, sep = ",")   # the explicit form
   m2 <- read.csv(csv)                               # the shorthand

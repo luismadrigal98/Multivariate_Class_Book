@@ -14,11 +14,11 @@
 ## ============================================================================
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: PAM_NA_WOGreenland.csv  (optional), pam.csv
+#   This session reads, from data/: PAM_NA_WOGreenland.csv, demo/pam.csv
 setwd("YOUR/DIRECTORY")
 
 ## ============================================================================
@@ -28,7 +28,7 @@ setwd("YOUR/DIRECTORY")
 ##  rows are sites and columns are species, then
 ##      row sums  = how many species live at each site      -> alpha (richness)
 ##      col sums  = at how many sites each species is found -> omega (range size)
-pamdf <- read.csv("pam.csv")
+pamdf <- read.csv("data/demo/pam.csv")
 lat   <- pamdf$lat
 pam   <- as.matrix(pamdf[, -1])            # sites x species, 0/1
 n     <- nrow(pam); s <- ncol(pam)
@@ -102,7 +102,7 @@ par(op)
 ##  endemism in the other. The frozen demo PAM carries latitude only; drop
 ##  PAM_NA_WOGreenland.csv or pamMamms5.csv (site, long, lat, species...) into
 ##  data/ and the geographic version below runs instead.
-pam_geo <- "PAM_NA_WOGreenland.csv"
+pam_geo <- "data/PAM_NA_WOGreenland.csv"
 if (file.exists(pam_geo)) {
   g    <- read.csv(pam_geo)
   crds <- as.matrix(g[, 2:3])

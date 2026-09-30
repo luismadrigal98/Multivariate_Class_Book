@@ -25,11 +25,11 @@
 ## ============================================================================
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: hanta_virtual.csv
+#   This session reads, from data/: hanta_virtual.csv
 setwd("YOUR/DIRECTORY")
 
 # Area under the ROC curve, from the rank-sum identity (no extra package)
@@ -236,7 +236,7 @@ if (have_dismo) {
 ##    1. does it DISCRIMINATE on data it has not seen?  (cross-validated AUC)
 ##    2. where do you cut suitability into presence/absence?  (thresholds)
 ##    3. is a projection interpolation or extrapolation?  (novel environments)
-occ  <- read.csv("hanta_virtual.csv")
+occ  <- read.csv("data/hanta_virtual.csv")
 form <- Sp ~ poly(bio_1, 2) + bio_12
 full <- glm(form, data = occ, family = binomial)
 

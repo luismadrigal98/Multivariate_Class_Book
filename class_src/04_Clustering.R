@@ -8,7 +8,12 @@
 ##  Revised from 05_kmeans_clustering_QRoo_Iris.R and 06_Hierarchical_Clustering.R
 ## ============================================================================
 
+##  HAND-OWNED -- this file is maintained by hand and scripts/make_class_src.py
+##  will NOT regenerate it. Fixes made in R/ do not reach it automatically; apply
+##  them here too. Remove this line to hand the file back to the generator.
+##
 ##  PLAIN CLASSROOM EDITION
+##  Hand-owned because: restructured sections, ggplot wing-pattern figure, pvclust reliability block
 ## ============================================================================
 
 # R packages required
@@ -78,7 +83,7 @@ Xi <- as.matrix(iris[, 1:4])
 mss    <- numeric(10)
 mss[1] <- sum(apply(Xi, 2, var)) * (nrow(Xi) - 1)  # Total SS at k = 1
 set.seed(1998)
-for (i in 2:10) mss[i] <- sum(kmeans(Xi, i, nstart = 25)$withinss)
+for (i in 1:10) mss[i] <- sum(kmeans(Xi, i, nstart = 25)$withinss)
 
 op <- par(mai = c(1, 1, 0.5, 0.5))
 plot(1:10, mss, type = "b", pch = 19, col = "#1f3b73",
@@ -232,6 +237,9 @@ print(p_but)
 ## ============================================================================
 ##  A partition tracks a gradient only if its groups are CONTIGUOUS blocks along
 ##  it. Check both scalings, for k = 2 and 3.
+
+succ <- as.integer(as.factor(sites))
+
 contig <- function(g) all(tapply(succ[names(g)], g,
                                  function(r) max(r) - min(r) + 1 == length(r)))
 km <- do.call(rbind, lapply(2:3, function(k) {

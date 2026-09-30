@@ -20,11 +20,11 @@ library(MASS)
 library(vegan)
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: taxon.csv
+#   This session reads, from data/: taxon.csv
 setwd("YOUR/DIRECTORY")
 
 # Built-in data sets used below
@@ -38,7 +38,7 @@ data(iris)
 ##  finds the axes maximising the ratio of between-group to within-group
 ##  variance -- Fisher's criterion. Unlike PCA, it is told the labels, and that
 ##  is exactly why it separates better.
-taxon <- read.csv("taxon.csv", stringsAsFactors = TRUE)           # Crawley, "The R Book"
+taxon <- read.csv("data/taxon.csv", stringsAsFactors = TRUE)           # Crawley, "The R Book"
 taxon$Taxon <- factor(taxon$Taxon)
 cat("taxon table:", nrow(taxon), "x", ncol(taxon), "\n"); print(head(taxon))
 cat("\nspecimens per taxon:\n"); print(table(taxon$Taxon))

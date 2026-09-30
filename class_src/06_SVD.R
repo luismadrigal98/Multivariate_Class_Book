@@ -14,11 +14,11 @@
 ## ============================================================================
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: Limenitis_archippus.csv
+#   This session reads, from data/: Limenitis_archippus.csv
 setwd("YOUR/DIRECTORY")
 
 ## ============================================================================
@@ -28,7 +28,7 @@ setwd("YOUR/DIRECTORY")
 ##  of a viceroy butterfly wing, one intensity per pixel. Nothing about the SVD
 ##  cares that it is a picture -- but a picture makes the rank-k approximation
 ##  visible in a way a table of numbers never does.
-G  <- as.matrix(read.csv("Limenitis_archippus.csv", header = FALSE))
+G  <- as.matrix(read.csv("data/Limenitis_archippus.csv", header = FALSE))
 nr <- nrow(G); nc <- ncol(G)
 cat("Image matrix:", nr, "x", nc, " (", nr * nc, "cells )\n")
 cat("intensity range:", round(range(G), 3), "\n")
@@ -53,9 +53,9 @@ rnk <- qr(G)$rank
 cat("\nRank from qr():", rnk, "  non-negligible singular values:",
     sum(s$d > max(dim(G)) * .Machine$double.eps * max(s$d)), "\n")
 
-d <- s$d[seq_len(min(nr, nc))]
-u <- as.matrix(s$u)
-v <- as.matrix(s$v)
+d <- s$d
+u <- s$u
+v <- s$v
 options(digits = 3)
 cat("first ten singular values:\n"); print(d[1:10])
 

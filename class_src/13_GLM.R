@@ -14,11 +14,11 @@
 ## ============================================================================
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: speciesCrawley3.csv
+#   This session reads, from data/: speciesCrawley3.csv
 setwd("YOUR/DIRECTORY")
 
 ## ============================================================================
@@ -30,7 +30,7 @@ setwd("YOUR/DIRECTORY")
 ##  and its variance may depend on the mean. So you must state the FAMILY --
 ##  gaussian, Gamma, Poisson, binomial -- and the LINK that connects the linear
 ##  predictor to the mean.
-m <- read.csv("speciesCrawley3.csv", stringsAsFactors = TRUE)
+m <- read.csv("data/speciesCrawley3.csv", stringsAsFactors = TRUE)
 m$Soil <- factor(m$Soil)
 str(m)
 

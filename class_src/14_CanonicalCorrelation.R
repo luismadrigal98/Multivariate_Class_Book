@@ -21,11 +21,11 @@ library(vegan)
 library(ade4)
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: BiodiversityCountriesBiGv.csv
+#   This session reads, from data/: BiodiversityCountriesBiGv.csv
 setwd("YOUR/DIRECTORY")
 
 # Built-in data sets used below
@@ -51,7 +51,7 @@ data(doubs)          # the Verneaux river-fish tables
 ##  and four World Bank governance indicators (www.govindicators.org):
 ##    VA voice and accountability | PS political stability and absence of
 ##    violence | GE government effectiveness | RL rule of law
-b <- read.csv("BiodiversityCountriesBiGv.csv", stringsAsFactors = TRUE)
+b <- read.csv("data/BiodiversityCountriesBiGv.csv", stringsAsFactors = TRUE)
 rownames(b) <- make.unique(as.character(b[[2]]))
 cat("table:", nrow(b), "countries x", ncol(b), "\n")
 print(head(b))

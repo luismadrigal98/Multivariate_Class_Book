@@ -197,10 +197,6 @@ with_fig("09_procrustes", {
 ##  -- variable axes through the configuration, per-object and per-variable
 ##  quality of fit, group structure -- can be built with vegan and base
 ##  graphics, which is what follows.
-if (has_pkg("BiplotGUI")) {
-  message("BiplotGUI is installed: try BiplotGUI::Biplots(Data = scale(cars))")
-} else skip_note("the interactive BiplotGUI explorer (archived on CRAN)", "BiplotGUI")
-
 ## ============================================================================
 ##  B1. Fitting variable axes onto an nMDS configuration
 ## ============================================================================

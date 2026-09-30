@@ -18,11 +18,11 @@
 library(vegan)
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: BiodivCountries.csv, ButterfliesQRoo2.csv
+#   This session reads, from data/: BiodivCountries.csv, ButterfliesQRoo2.csv
 setwd("YOUR/DIRECTORY")
 
 # Built-in data sets used below
@@ -176,9 +176,6 @@ par(op)
 ##  -- variable axes through the configuration, per-object and per-variable
 ##  quality of fit, group structure -- can be built with vegan and base
 ##  graphics, which is what follows.
-if (requireNamespace("BiplotGUI", quietly = TRUE)) {
-  message("BiplotGUI is installed: try BiplotGUI::Biplots(Data = scale(cars))")
-} else message("Skipped: the interactive BiplotGUI explorer (archived on CRAN).  Install with: install.packages(c(\"BiplotGUI\"))")
 ## ============================================================================
 ##  B1. Fitting variable axes onto an nMDS configuration
 ## ============================================================================
@@ -228,7 +225,7 @@ print(vegan::adonis2(vegan::vegdist(cars, method = "gower") ~ cyl))
 ## ============================================================================
 ##  B3. The biodiversity and butterfly tables, ordinated the same way
 ## ============================================================================
-biodiv2 <- read.csv("BiodivCountries.csv", stringsAsFactors = TRUE)
+biodiv2 <- read.csv("data/BiodivCountries.csv", stringsAsFactors = TRUE)
 richN   <- c("AmphRich","Rept_rich","BirdRich","MamsRich",
              "DensAmphRich","DensRept_rich","DensBirdRich","DensMamsRich")
 bd      <- na.omit(biodiv2[, c("RegionCode", richN)])
@@ -246,7 +243,7 @@ legend("topright", legend = levels(bd$RegionCode),
        col = seq_along(levels(bd$RegionCode)), pch = 19, cex = .7, bty = "n")
 
 ## Quintana Roo: sites x wing patterns, as in sessions 04 and 08
-qroo4  <- read.csv("ButterfliesQRoo2.csv", stringsAsFactors = TRUE)
+qroo4  <- read.csv("data/ButterfliesQRoo2.csv", stringsAsFactors = TRUE)
 sitesQ <- c("HD", "SD", "GA", "YA", "MA", "OA", "PF")
 qroo2  <- aggregate(qroo4[, sitesQ], by = list(Pattern = qroo4$Pattern), FUN = mean)
 QRoo   <- as.matrix(t(qroo2[, -1]))

@@ -8,7 +8,7 @@ professor asked the class scripts to use no wrappers at all, so this script
 rewrites each one into plain base R:
 
     need("vegan")                 ->  library(vegan)
-    get_data("biodiv")            ->  read.csv("BiodivCountries.csv")
+    get_data("biodiv")            ->  read.csv("data/BiodivCountries.csv")
     file.path(data_dir(), "x")    ->  "x"
     with_fig("name", { BODY })    ->  BODY, dedented, with par() saved/restored
     has_pkg("rgl")                ->  requireNamespace("rgl", quietly = TRUE)
@@ -28,21 +28,21 @@ DATA = {
     "iris":           ("iris",   None, 'data(iris)'),
     "mtcars":         ("mtcars", None, 'data(mtcars)'),
     "doubs":          ("doubs",  None, ('ade4', 'data(doubs)          # the Verneaux river-fish tables')),
-    "biodiv":         ('read.csv("BiodivCountries.csv", stringsAsFactors = TRUE)', "BiodivCountries.csv", None),
-    "biodiv_pc":      ('read.csv("BiodiversityCountriesPCValues.csv", stringsAsFactors = TRUE)', "BiodiversityCountriesPCValues.csv", None),
-    "biodiv_gv":      ('read.csv("BiodiversityCountriesBiGv.csv", stringsAsFactors = TRUE)', "BiodiversityCountriesBiGv.csv", None),
-    "butterflies":    ('read.csv("ButterfliesQRoo2.csv", stringsAsFactors = TRUE)', "ButterfliesQRoo2.csv", None),
-    "taxon":          ('read.csv("taxon.csv", stringsAsFactors = TRUE)', "taxon.csv", None),
-    "crawley":        ('read.csv("speciesCrawley3.csv", stringsAsFactors = TRUE)', "speciesCrawley3.csv", None),
-    "hanta":          ('read.csv("hanta_virtual.csv")', "hanta_virtual.csv", None),
-    "europe":         ('read.csv("CitiesEurope.csv", stringsAsFactors = TRUE)', "CitiesEurope.csv", None),
-    "countries_live": ('read.csv("CountriesToLive.csv", stringsAsFactors = TRUE)', "CountriesToLive.csv", None),
-    "neotoma":        ('read.csv("NeotomaMorphoEnvir.csv", stringsAsFactors = TRUE)', "NeotomaMorphoEnvir.csv", None),
-    "ssa_factor":     ('read.csv("BiodiversityCountriesSSAFactanal2.csv", stringsAsFactors = TRUE)', "BiodiversityCountriesSSAFactanal2.csv", None),
-    "insatisf":       ('read.csv("Insatisf2.csv", stringsAsFactors = TRUE)', "Insatisf2.csv", None),
-    "limenitis":      ('as.matrix(read.csv("Limenitis_archippus.csv", header = FALSE))', "Limenitis_archippus.csv", None),
-    "leukemia":       ('readRDS("leukemiaExpressionSubset.rds")', "leukemiaExpressionSubset.rds", None),
-    "pam":            ('read.csv("pam.csv")', "pam.csv", None),
+    "biodiv":         ('read.csv("data/BiodivCountries.csv", stringsAsFactors = TRUE)', "BiodivCountries.csv", None),
+    "biodiv_pc":      ('read.csv("data/BiodiversityCountriesPCValues.csv", stringsAsFactors = TRUE)', "BiodiversityCountriesPCValues.csv", None),
+    "biodiv_gv":      ('read.csv("data/BiodiversityCountriesBiGv.csv", stringsAsFactors = TRUE)', "BiodiversityCountriesBiGv.csv", None),
+    "butterflies":    ('read.csv("data/ButterfliesQRoo2.csv", stringsAsFactors = TRUE)', "ButterfliesQRoo2.csv", None),
+    "taxon":          ('read.csv("data/taxon.csv", stringsAsFactors = TRUE)', "taxon.csv", None),
+    "crawley":        ('read.csv("data/speciesCrawley3.csv", stringsAsFactors = TRUE)', "speciesCrawley3.csv", None),
+    "hanta":          ('read.csv("data/hanta_virtual.csv")', "hanta_virtual.csv", None),
+    "europe":         ('read.csv("data/CitiesEurope.csv", stringsAsFactors = TRUE)', "CitiesEurope.csv", None),
+    "countries_live": ('read.csv("data/CountriesToLive.csv", stringsAsFactors = TRUE)', "CountriesToLive.csv", None),
+    "neotoma":        ('read.csv("data/NeotomaMorphoEnvir.csv", stringsAsFactors = TRUE)', "NeotomaMorphoEnvir.csv", None),
+    "ssa_factor":     ('read.csv("data/BiodiversityCountriesSSAFactanal2.csv", stringsAsFactors = TRUE)', "BiodiversityCountriesSSAFactanal2.csv", None),
+    "insatisf":       ('read.csv("data/Insatisf2.csv", stringsAsFactors = TRUE)', "Insatisf2.csv", None),
+    "limenitis":      ('as.matrix(read.csv("data/Limenitis_archippus.csv", header = FALSE))', "Limenitis_archippus.csv", None),
+    "leukemia":       ('readRDS("data/leukemiaExpressionSubset.rds")', "leukemiaExpressionSubset.rds", None),
+    "pam":            ('read.csv("data/demo/pam.csv")', "demo/pam.csv", None),
 }
 
 AUC_DEF = '''# Area under the ROC curve, from the rank-sum identity (no extra package)
@@ -203,8 +203,9 @@ def convert(path):
     # ---- the remaining helpers -------------------------------------------------
     direct = []
     def strip_data_dir(m):
-        direct.append(m.group(1).strip('"'))
-        return m.group(1)
+        fn = m.group(1).strip('"')
+        direct.append(fn)
+        return '"data/%s"' % fn
     body = re.sub(r'file\.path\(data_dir\(\),\s*("[^"]+")\)', strip_data_dir, body)
     def hp(m):
         ps = re.findall(r'"([^"]+)"', m.group(1))
@@ -254,11 +255,11 @@ def convert(path):
         out.append("")
     if files:
         out += ["# Working directory",
-                "#   Point this at the folder that holds this session's data. Every file",
-                "#   name below is resolved relative to it, so the script and its data have",
-                "#   to travel together -- or at least stay in step.",
+                "#   Point this at the folder that holds this script and its data/ subfolder.",
+                "#   Every file name below is resolved relative to it, so the script and its",
+                "#   data have to travel together -- or at least stay in step.",
                 "#",
-                "#   This session reads: " + ", ".join(sorted(set(files))),
+                "#   This session reads, from data/: " + ", ".join(sorted(set(files))),
                 'setwd("YOUR/DIRECTORY")', ""]
     if setup:
         out += ["# Built-in data sets used below"] + setup + [""]
@@ -269,16 +270,36 @@ def convert(path):
     return re.sub(r'\n{4,}', "\n\n\n", text), files
 
 
+OWNED_MARK = "HAND-OWNED"
+
+
+def is_hand_owned(path):
+    """A class script may be taken over and maintained by hand -- it then carries
+    a HAND-OWNED line in its header and this generator leaves it alone."""
+    if not os.path.exists(path):
+        return False
+    with open(path, encoding="utf8") as fh:
+        return any(OWNED_MARK in l for l in fh.read(4000).split("\n"))
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
-    manifest = []
+    manifest, skipped = [], []
     for f in sorted(os.listdir(SRC_DIR)):
         if not f.endswith(".R") or f == "00_utils.R":
             continue
+        target = os.path.join(OUT_DIR, f)
+        if is_hand_owned(target):
+            skipped.append(f)
+            print("  %-32s HAND-OWNED, left untouched" % f)
+            continue
         text, files = convert(os.path.join(SRC_DIR, f))
-        open(os.path.join(OUT_DIR, f), "w", encoding="utf8").write(text)
+        open(target, "w", encoding="utf8").write(text)
         manifest.append((f, files))
         print("  %-32s %s" % (f, " ".join(files) or "(no data files)"))
+    if skipped:
+        print("\n  %d hand-owned file(s) skipped: %s" % (len(skipped), ", ".join(skipped)))
+        print("  Fixes made in R/ do NOT reach them -- apply those by hand.")
     return manifest
 
 

@@ -19,11 +19,11 @@
 ## ============================================================================
 
 # Working directory
-#   Point this at the folder that holds this session's data. Every file
-#   name below is resolved relative to it, so the script and its data have
-#   to travel together -- or at least stay in step.
+#   Point this at the folder that holds this script and its data/ subfolder.
+#   Every file name below is resolved relative to it, so the script and its
+#   data have to travel together -- or at least stay in step.
 #
-#   This session reads: BiodiversityCountriesSSAFactanal2.csv, GraceSEM.csv  (optional), Insatisf2.csv
+#   This session reads, from data/: BiodiversityCountriesSSAFactanal2.csv, GraceSEM.csv, Insatisf2.csv
 setwd("YOUR/DIRECTORY")
 
 ## ============================================================================
@@ -45,7 +45,7 @@ setwd("YOUR/DIRECTORY")
 ## ============================================================================
 ##  2. FIRST EXAMPLE: capacity, biodiversity and governance in Africa
 ## ============================================================================
-m  <- read.csv("BiodiversityCountriesSSAFactanal2.csv", stringsAsFactors = TRUE)
+m  <- read.csv("data/BiodiversityCountriesSSAFactanal2.csv", stringsAsFactors = TRUE)
 m2 <- m[, -1]                       # drop the country label column
 cat("table:", nrow(m2), "countries x", ncol(m2), "indicators\n")
 print(names(m2))
@@ -112,7 +112,7 @@ cat("(panels: no rotation, varimax, promax -- same fit, different basis)\n")
 ## ============================================================================
 ##  3. SECOND EXAMPLE: social indicators of the US states
 ## ============================================================================
-d  <- read.csv("Insatisf2.csv", stringsAsFactors = TRUE)
+d  <- read.csv("data/Insatisf2.csv", stringsAsFactors = TRUE)
 d2 <- na.omit(d[, -1])
 rownames(d2) <- d[[1]][as.integer(rownames(d2))]
 cat("\nstates table:", nrow(d2), "x", ncol(d2), "\n")
@@ -160,7 +160,7 @@ print(faI2, digits = 2, cutoff = 0.2, sort = TRUE)
 ##    cond      water conductivity (a quality measure)
 ##    cattails  cover of Typha, an invader, as a percentage
 ##    richness  number of native plant species
-grace_path <- "GraceSEM.csv"
+grace_path <- "data/GraceSEM.csv"
 if (file.exists(grace_path) && requireNamespace("lavaan", quietly = TRUE)) {
   ml <- read.csv(grace_path)
 
