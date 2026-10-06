@@ -44,7 +44,9 @@ library(cluster)
 #   to travel together -- or at least stay in step.
 #
 #   This session reads: BiodivCountries.csv, CitiesEurope.csv, NeotomaMorphoEnvir.csv, gen.10000.vcf  (optional), speciesCrawley3.csv
-setwd("YOUR/DIRECTORY")
+#setwd("YOUR/DIRECTORY")
+
+def_par <- par()
 
 # Built-in data sets used below
 data(iris)
@@ -544,6 +546,7 @@ legend("bottomleft", legend = morphSmall$sp,
 if (requireNamespace("BiplotGUI", quietly = TRUE)) {
   message("BiplotGUI is available: BiplotGUI::Biplots(Data = morphSmallS)")
 } else message("Skipped: the interactive BiplotGUI explorer (archived on CRAN).  Install with: install.packages(c(\"BiplotGUI\"))")
+
 ## ############################################################################
 ##  PART D -- PRINCIPAL COORDINATE ANALYSIS      (schedule: folded into Oct 8)
 ## ############################################################################
@@ -603,7 +606,7 @@ abline(h = 0, lty = 2, col = "red")
 
 ## Broken-stick comparison, written out longhand (this is what evplot draws).
 bstick <- function(ev) {
-  n <- length(ev); b <- numeric(n); b[1] <- 0
+  n <- length(ev); b <- numeric(n); b[1] <- 1/n
   for (i in 2:n) b[i] <- b[i - 1] + 1 / (1 + n - i)
   100 * b / n
 }
@@ -757,14 +760,6 @@ plot(pca$x[, 1:2], pch = 19, cex = .6, col = colvec[sp], main = "PCA scores")
 plot(pco$points,   pch = 19, cex = .6, col = colvec[sp],
      main = "PCoA on Euclidean distance", xlab = "Axis 1", ylab = "Axis 2")
 par(op)
-
-## the book's scree figure
-par(mfrow = c(1, 1))
-ev <- pca$sdev^2
-barplot(ev, names.arg = paste0("PC", seq_along(ev)), col = "bisque",
-        ylab = "eigenvalue", main = "Iris PCA - scree plot")
-abline(h = 1, lty = 2, col = "#8c2d3a")
-legend("topright", "Kaiser (eig = 1)", lty = 2, col = "#8c2d3a", bty = "n")
 
 cat("\n[07_PCA] PCA rotates variables into uncorrelated components; the biplot",
     "shows objects and variables together; PCoA generalises the whole thing to",
