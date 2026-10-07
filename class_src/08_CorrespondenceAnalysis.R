@@ -20,12 +20,12 @@ library(vegan)
 library(ade4)
 
 # Working directory
-#   Point this at the folder that holds this script and its data/ subfolder.
-#   Every file name below is resolved relative to it, so the script and its
-#   data have to travel together -- or at least stay in step.
+#   Point this at the folder that holds this session's data. Every file
+#   name below is resolved relative to it, so the script and its data have
+#   to travel together -- or at least stay in step.
 #
-#   This session reads, from data/: ButterfliesQRoo2.csv
-setwd("YOUR/DIRECTORY")
+#   This session reads: ButterfliesQRoo2.csv
+setwd("C:\\Users\\jsoberon\\OneDrive - University of Kansas\\Shared with Everyone\\MultivariateClassDataTables")
 
 # Built-in data sets used below
 data(doubs)          # the Verneaux river-fish tables
@@ -38,10 +38,25 @@ data(doubs)          # the Verneaux river-fish tables
 ##  ellipse. It has been called reciprocal averaging and dual scaling; the
 ##  mathematics is the same in every case.
 ##
-##  The appropriate distance is chi-square, not Euclidean. CA eigen-decomposes
-##  the chi-square distances between ROWS (sites), and the same eigenvalues
-##  scale to the chi-square distances between COLUMNS (species). So CA is an
-##  R-mode and a Q-mode analysis at once -- which follows from the fact, from
+##  In standardized PCA, Euclidean distance between observations is preserved.
+##  In CA, chi-square, not Euclidean distance, is preserved.
+
+##  Why chi-square distance and not plain Euclidean distance?
+## 1) It removes sample size. Working with profiles means a site with 1,000 individuals
+## and one with 100 compare by composition, not by total.
+## 2) It down-weights abundant species. 
+## 3) The $1/c_j$ factor stops the commonest species from dominating, and it gives rare species more say. This is why CA can be sensitive to rare species.
+## 4) It has distributional equivalence. If two columns have the same profile
+## and you merge them into one, the distances between rows do not change. Euclidean distance on raw counts lacks this property.
+
+##  CA works by first transforming the data matrix X  dividing by the fill: P=X/f
+##  and then getting the rows (alphas) and column (omegas) totals. 
+##  The row profile is p_i,j = x_i,j/alfa_i.
+##  The product of the vectors alphas%*% t(omegas) = a matrix  with entries 
+##  X-P'. Finally, one gets S= diag(alphas)%*%P'%*%diag(omegas).
+
+##  A 2d plot of CA scores is the best 2d approximation to chi-square distances in the full space.
+##  CA is an R-mode and a Q-mode analysis at once -- which follows from the fact, from
 ##  session 01, that XX' and X'X share their non-zero eigenvalues.
 ##
 ##  Data: Verneaux (1973) -- 27 fish species, 11 environmental variables and
@@ -60,18 +75,18 @@ if (!is.null(doubs$xy)) {
   plot(doubs$xy, pch = 19, col = "seagreen", asp = 1,
        main = "The 30 sites, in real geography")
   text(doubs$xy, labels = seq_len(nrow(doubs$xy)), pos = 3, cex = .7)
-
+  
   cat("\nThe sites trace the river downstream -- so spatial covariance is not a",
       "hypothesis, it is a certainty.\n")
 }
 
 ## CA cannot handle an all-zero row or column
-cat("\nempty sites:",   paste(which(rowSums(doubs$fish) == 0), collapse = ", "), "\n")
+cat("empty sites:",   paste(which(rowSums(doubs$fish) == 0), collapse = ", "), "\n")
 cat("empty species:", paste(which(colSums(doubs$fish) == 0), collapse = ", "), "\n")
 keep <- rowSums(doubs$fish) > 0
 fish <- doubs$fish[keep, colSums(doubs$fish[keep, ]) > 0]
 env  <- doubs$env[keep, ]
-cat("after removing empty rows:", nrow(fish), "sites x", ncol(fish), "species\n")
+cat("after removing empty rows we keep:", nrow(fish), "sites x", ncol(fish), "species\n")
 
 ## ============================================================================
 ##  2. RUNNING IT, AND THE TWO SCALINGS
@@ -122,9 +137,10 @@ evplot(ev, "(Doubs fish)")
 ## ============================================================================
 # Wide figure: widen the Plot pane, or open a sized device first --
 #   dev.new(width = 12, height = 6)
+x11()
 op <- par(mfrow = c(1, 2))
-plot(f.ca, scaling = 1, main = "Scaling 1: sites are centroids of species")
-plot(f.ca, scaling = 2, main = "Scaling 2: species are centroids of sites")
+plot(f.ca, scaling = 1, main = "Scaling 1: distances among sites are approx. preserved",xlab="51.50%",ylab="12.37%")
+plot(f.ca, scaling = 2, main = "Scaling 2: distances among species are approx. preserved",xlab="51.50%",ylab="12.37%")
 par(op)
 
 ##  Axis 1 separates sites 19-30, the downstream ones, and most species sit near
@@ -132,6 +148,8 @@ par(op)
 ##  species characteristic of them. Interpretation needs care: by construction
 ##  the site scores and species scores maximise their correlation, so proximity
 ##  on the plot is a statement about relative frequency, not abundance.
+
+## In Scaling 2 three clusters of species are apparent, similar by their proportions
 
 ## ---- overlaying the environment --------------------------------------------
 ##  envfit() regresses each environmental variable on the ordination axes and
@@ -167,7 +185,7 @@ par(op)
 ## ============================================================================
 ##  Sites x wing patterns, from session 04. Here the gradient is succession, and
 ##  the arch is almost entirely a consequence of it.
-qroo3 <- read.csv("data/ButterfliesQRoo2.csv", stringsAsFactors = TRUE)
+qroo3 <- read.csv("ButterfliesQRoo2.csv", stringsAsFactors = TRUE)
 sites <- c("HD", "SD", "GA", "YA", "MA", "OA", "PF")
 qroo2 <- aggregate(qroo3[, sites], by = list(Pattern = qroo3$Pattern), FUN = sum)
 qroo  <- as.matrix(t(qroo2[, -1]))
