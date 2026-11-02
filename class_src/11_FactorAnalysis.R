@@ -34,7 +34,7 @@ setwd("YOUR/DIRECTORY")
 ##  unobserved COMMON factors that generate the correlations, plus a
 ##  variable-specific term:
 ##
-##        x = Lambda f + e ,      Cov(x) = Lambda Lambda' + Psi
+##        x = Lambda * f + e ,      Cov(x) = Lambda * Lambda' + Psi
 ##
 ##  Lambda holds the loadings, f are the common factors (uncorrelated, unit
 ##  variance) and Psi is a diagonal matrix of UNIQUENESSES -- the part of each
@@ -104,7 +104,7 @@ for (fit in list(none = mf3, varimax = mf3a, promax = mf3b)) {
   plot(L[, 1:2], pch = 19, col = "#1f3b73", xlim = c(-1, 1), ylim = c(-1, 1),
        xlab = "Factor 1", ylab = "Factor 2")
   abline(h = 0, v = 0, col = "grey70")
-  text(L[, 1:2], labels = rownames(L), cex = .55, pos = 3)
+  text(L[, 1:2], labels = rownames(L), cex = 1, pos = 3)
 }
 par(op)
 cat("(panels: no rotation, varimax, promax -- same fit, different basis)\n")

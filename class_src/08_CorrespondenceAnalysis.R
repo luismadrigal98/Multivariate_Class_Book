@@ -25,7 +25,7 @@ library(ade4)
 #   to travel together -- or at least stay in step.
 #
 #   This session reads: ButterfliesQRoo2.csv
-setwd("C:\\Users\\jsoberon\\OneDrive - University of Kansas\\Shared with Everyone\\MultivariateClassDataTables")
+setwd("Your dir")
 
 # Built-in data sets used below
 data(doubs)          # the Verneaux river-fish tables
@@ -137,7 +137,7 @@ evplot(ev, "(Doubs fish)")
 ## ============================================================================
 # Wide figure: widen the Plot pane, or open a sized device first --
 #   dev.new(width = 12, height = 6)
-x11()
+#x11()
 op <- par(mfrow = c(1, 2))
 plot(f.ca, scaling = 1, main = "Scaling 1: distances among sites are approx. preserved",xlab="51.50%",ylab="12.37%")
 plot(f.ca, scaling = 2, main = "Scaling 2: distances among species are approx. preserved",xlab="51.50%",ylab="12.37%")
@@ -185,7 +185,7 @@ par(op)
 ## ============================================================================
 ##  Sites x wing patterns, from session 04. Here the gradient is succession, and
 ##  the arch is almost entirely a consequence of it.
-qroo3 <- read.csv("ButterfliesQRoo2.csv", stringsAsFactors = TRUE)
+qroo3 <- read.csv("data/ButterfliesQRoo2.csv", stringsAsFactors = TRUE)
 sites <- c("HD", "SD", "GA", "YA", "MA", "OA", "PF")
 qroo2 <- aggregate(qroo3[, sites], by = list(Pattern = qroo3$Pattern), FUN = sum)
 qroo  <- as.matrix(t(qroo2[, -1]))
