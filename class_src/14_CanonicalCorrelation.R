@@ -41,7 +41,7 @@ data(doubs)          # the Verneaux river-fish tables
 ##  that maximises CORRELATION rather than variance, and it is symmetric --
 ##  neither table is the response.
 ##
-##  Redundancy analysis (Part B) is the asymmetric counterpart: it generalises
+##  Redundancy analysis (Part B) is the asymmetric counterpart: it generalizes
 ##  REGRESSION instead of correlation.
 
 ## ============================================================================
@@ -75,13 +75,13 @@ if (requireNamespace("CCA", quietly = TRUE)) {
   corrbg <- CCA::matcor(bbs, bg)
   par(mfrow = c(1, 1))
   CCA::img.matcor(corrbg, type = 2)
-} else message("Skipped: the img.matcor correlation display.  Install with: install.packages(c(\"CCA\"))")
+} else {message("Skipped: the img.matcor correlation display.  Install with: install.packages(c(\"CCA\"))")
 cb  <- cor(bbs)
 cg  <- cor(bg)
 cgb <- cor(cbind(bbs, bg))
 cat("\nwithin biodiversity:\n"); print(round(cb, 2))
 cat("\nwithin governance:\n");   print(round(cg, 2))
-cat("\ncross-block correlations:\n"); print(round(cgb[1:4, 5:8], 2))
+cat("\ncross-block correlations:\n"); print(round(cgb[1:4, 5:8], 2))}
 
 ##  gplots::heatmap.2 gives more control than heatmap(): no trace, no density
 ##  strip, readable label sizes.
