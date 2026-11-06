@@ -67,11 +67,11 @@ points(petal, col = c("#1f3b73","#8c2d3a","#2a7f7f")[iris$Species], pch = 19)
 ## ===========================================================================
 ##  TRACK B — keras/tensorflow template (UnitNN style). Runs only if installed.
 ## ===========================================================================
-if (requireNamespace("keras", quietly = TRUE)) {
-  library(keras)
+if (requireNamespace("keras3", quietly = TRUE)) {
+  library(keras3)
   ## --- dense classifier ---------------------------------------------------
   model <- keras_model_sequential() |>
-    layer_dense(units = 16, activation = "relu", input_shape = 4) |>
+    layer_dense(units = 16, activation = "relu") |>
     layer_dropout(0.2) |>
     layer_dense(units = 8, activation = "relu") |>
     layer_dense(units = 3, activation = "softmax")
@@ -93,5 +93,9 @@ if (requireNamespace("keras", quietly = TRUE)) {
   message("keras not installed — Track B is a template only. ",
           "See UnitNN in the ML course for the full GPU workflow.")
 }
+
+## ===========================================================================
+##  TRACK C — keras/tensorflow template (UnitNN style). Serious example
+## ===========================================================================
 
 cat("\n[17_NN_DL] done.\n")
