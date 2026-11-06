@@ -30,17 +30,14 @@
 #install.packages("randomForest")
 #install.packages("gbm")
 #install.packages("caret")
-#install.packages("mlbench")
 library(rpart)
 library(rpart.plot)
 library(randomForest)
 library(gbm)
 library(caret)
-library(mlbench)
 
 # Built-in data sets used below
 data(iris)
-data(Vehicle)
 
 set.seed(1998)                                   # reproducibility (as in ML units)
 
@@ -92,53 +89,5 @@ best <- grids[[ which.max(vapply(grids, function(g) max(g$results$Accuracy), 0))
 cm   <- caret::confusionMatrix(predict(best, test), test$Species)
 cat("\nBest model:", best$method, "\n"); print(cm$table)
 cat("Test accuracy:", round(cm$overall["Accuracy"], 3), "\n")
-
-## ---- 5. MLBENCH dataset
-
-## ---- Data & train/test split -----------------------------------------------
-idx   <- caret::createDataPartition(Vehicle$Class, p = 0.7, list = FALSE)
-train <- Vehicle[idx, ]; test <- Vehicle[-idx, ]
-
-## ---- 1. A single CART tree -------------------------------------------------
-fit_cart <- rpart::rpart(Class ~ ., data = train, method = "class",
-                         control = rpart::rpart.control(cp = 0.01))
-rpart.plot::rpart.plot(fit_cart, box.palette = "BuGn", main = "CART decision tree")
-
-acc <- function(model, newdata, truth = newdata$Class, type = "class")
-  mean(predict(model, newdata, type = type) == truth)
-cat("Single CART test accuracy:", round(acc(fit_cart, test), 3), "\n")
-
-## ---- 2. Random forest (bagging of de-correlated trees) ---------------------
-fit_rf <- randomForest::randomForest(Class ~ ., data = train,
-                                     ntree = 500, importance = TRUE)
-cat("Random-forest test accuracy:",
-    round(mean(predict(fit_rf, test) == test$Class), 3), "\n")
-randomForest::varImpPlot(fit_rf, n.var = 10, main = "Random-forest variable importance")
-
-## ---- 3. caret: one interface, honest resampling, tuning --------------------
-## Seed the CV folds or set seed right before each train() call for exact fold parity
-ctrl <- caret::trainControl(method = "cv", number = 5)
-
-set.seed(1998)
-fit_cv_rpart <- caret::train(Class ~ ., data = train, method = "rpart",
-                             trControl = ctrl, tuneLength = 6)
-set.seed(1998)
-fit_cv_bag   <- caret::train(Class ~ ., data = train, method = "treebag",
-                             trControl = ctrl)
-set.seed(1998)
-fit_cv_rf    <- caret::train(Class ~ ., data = train, method = "rf",
-                             trControl = ctrl, tuneLength = 4)
-set.seed(1998)
-fit_cv_gbm   <- caret::train(Class ~ ., data = train, method = "gbm",
-                             trControl = ctrl, verbose = FALSE)
-
-grids <- list(rpart = fit_cv_rpart, treebag = fit_cv_bag, rf = fit_cv_rf, gbm = fit_cv_gbm)
-
-print(grids)
-
-res2 <- caret::resamples(grids)
-
-print(dotplot(res2, metric = "Accuracy",
-              main = "Tuned model comparison (5-fold CV)"))
 
 cat("\n[15_SupervisedML] done.\n")

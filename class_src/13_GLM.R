@@ -31,6 +31,7 @@ setwd("YOUR/DIRECTORY")
 ##  gaussian, Gamma, Poisson, binomial -- and the LINK that connects the linear
 ##  predictor to the mean.
 m <- read.csv("data/speciesCrawley3.csv", stringsAsFactors = TRUE)
+m$Soil <- factor(m$Soil)
 str(m)
 
 par(mfrow = c(1, 1))
@@ -38,10 +39,6 @@ pairs(m[, 2:5], col = factor(m$Species), pch = 19, cex = .6,
       main = "speciesCrawley3: biomass, temperature, precipitation, pH")
 
 ## ---- is the response even close to normal? ----------------------------------
-
-## Note: We care about Biomass and whether we can predict it from the other 
-## variables in the dataset
-
 op <- par(mfrow = c(1, 2))
 qqnorm(m$Biomass, main = "Variable: Biomass"); qqline(m$Biomass)
 hist(m$Biomass, col = "grey85", main = "Biomass", xlab = "")
@@ -64,7 +61,7 @@ cat("Shapiro-Wilk on OLS residuals: p =",
 ## ============================================================================
 ##  continuous and unbounded      -> gaussian (ordinary regression)
 ##  continuous and non-negative   -> Gamma, or inverse gaussian
-##      (precipitation, concentrations -- anything with a hard floor)
+##      (biomass, precipitation, concentrations -- anything with a hard floor)
 ##  counts in a fixed interval    -> poisson
 ##      poisson assumes mean == variance; when that fails use quasipoisson or
 ##      a negative binomial
@@ -100,6 +97,8 @@ mG_TxP <- glm(Biomass ~ Tmp * Precip, data = m, family = Gamma)
 print(summary(mG_TP))
 print(summary(mG_TxP))
 cat("\nAIC:\n"); print(AIC(mGamma, mG_TP, mG_TxP))
+## (the original script compared an object `mBT` that was never created; the
+##  three models above are the intended comparison)
 
 ## ============================================================================
 ##  3. A FACTOR PREDICTOR IS AN ANOVA
@@ -149,7 +148,7 @@ mSTp  <- glm(Species ~ Tmp + pH, data = m, family = poisson)
 mST_p <- glm(Species ~ Tmp * pH, data = m, family = poisson)
 print(summary(mSTp))
 print(summary(mST_p))
-cat("\nAIC, additive vs interaction:\n"); print(AIC(mST,mSTp, mST_p))
+cat("\nAIC, additive vs interaction:\n"); print(AIC(mSTp, mST_p))
 op <- par(mfrow = c(2, 2)); plot(mST_p)
 par(op)
 

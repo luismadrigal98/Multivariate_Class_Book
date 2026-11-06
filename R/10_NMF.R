@@ -71,7 +71,7 @@ need("NMF")
 ##  a seed. Fix the seed or the answer moves.
 expr <- get_data("leukemia")             # genes x samples
 A    <- expr - min(expr)                 # ensure non-negativity
-type <- sub("\\..*$", "", colnames(expr))
+type <- sub("_.*$", "", colnames(expr))          # ALL/AML/CLL/CML/NoL, not the accession
 cat("expression matrix:", nrow(A), "genes x", ncol(A), "samples\n")
 cat("leukemia subtypes:\n"); print(table(type))
 

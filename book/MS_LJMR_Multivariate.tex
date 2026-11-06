@@ -1447,9 +1447,15 @@ frequencies alone would have bought.
 \end{figure}
 
 % ===========================================================================
-\chapter{Unsupervised Machine Learning: t-SNE and UMAP}
+\chapter{Unsupervised Machine Learning}
 \label{ch:unsupml}
 % ===========================================================================
+Unsupervised learning covers two quite different questions. The first --- \emph{which
+objects are alike?} --- is answered by putting objects in a low-dimensional space, and is
+the subject of the first half of this chapter. The second --- \emph{which things occur
+together?} --- needs no distance, no projection and no embedding at all, and is the subject
+of the second.
+
 PCA is a \emph{linear} projection: it preserves global variance but can leave curved,
 clustered structure tangled. Modern \emph{manifold learners} — t-SNE and UMAP — are
 non-linear and optimise for preserving \emph{local} neighbourhoods, so they pull apart
@@ -1495,8 +1501,19 @@ round(pc$sdev^2 / sum(pc$sdev^2), 3)[1:3]
 \end{lstlisting}
 
 \begin{lstlisting}[style=rout]
+samples per subtype:
+ALL AML CLL CML NoL
+ 12  12  12  12  12
+
 PCA variance explained (PC1-3): 0.324 0.149 0.071
+k-NN label purity  PCA: 0.687  t-SNE: 0.873  UMAP: 0.95
+  (chance level with 5 equal subtypes = 0.2 )
 \end{lstlisting}
+
+The purity scores put numbers on the figure: of each sample's ten nearest neighbours in
+the map, PCA places $69\%$ in the same subtype, t-SNE $87\%$ and UMAP $95\%$, against a
+chance level of $20\%$. All three beat chance comfortably and the ordering is the expected
+one, with the non-linear methods recovering more local structure.
 
 That PC1 accounts for under a third of the variance is itself the argument for the other
 two methods. With the linear projection spreading the signal thinly across many components,
@@ -1521,11 +1538,94 @@ simultaneously. A metric that is identically zero across methods that plainly di
 figure is a bug in the labels, not a finding about the embeddings.
 \end{pitfall}
 
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{16_tsne_perplexity.png}
+  \caption{The same 60 samples embedded by t-SNE at three perplexities (5, 12 and 18;
+  colours are the five leukemia subtypes, as in Figure~\ref{fig:embed}). Perplexity sets
+  roughly how many neighbours each point is asked to care about, and it changes the layout
+  rather than merely rescaling it. It is also bounded by the sample size: \pkg{Rtsne}
+  requires perplexity $<(n-1)/3$, so with 60 samples nothing from 20 upwards is accepted.}
+  \label{fig:perplexity}
+\end{figure}
+
 \begin{pitfall}
 t-SNE and UMAP distort \emph{global} geometry: distances \emph{between} well-separated
 clusters, and cluster \emph{sizes}, are not meaningful, and the layout depends on
 perplexity / \code{n\_neighbors}. Use them to \emph{see} groups, not to measure how far
 apart groups are — for that, return to PCA or PCoA.
+\end{pitfall}
+
+\section{Association rules: co-occurrence without a projection}
+Everything so far has worked by placing objects in a space and reading off proximity.
+Association-rule mining \cite{Agrawal_1994} throws that apparatus away. Its data is a set
+of \emph{transactions}, each a basket of \emph{items}, and its output is a list of
+implications $\{A,B\}\Rightarrow\{C\}$ scored by three quantities:
+\[
+  \operatorname{supp}(X)=\frac{|\{t : X\subseteq t\}|}{N},\qquad
+  \operatorname{conf}(A\Rightarrow C)=\frac{\operatorname{supp}(A\cup C)}{\operatorname{supp}(A)},\qquad
+  \operatorname{lift}(A\Rightarrow C)=\frac{\operatorname{conf}(A\Rightarrow C)}{\operatorname{supp}(C)} .
+\]
+Support is how often the pattern occurs at all, confidence is $P(C\mid A)$ --- how often
+the rule holds where it applies --- and lift compares that conditional probability with the
+unconditional one. Lift $=1$ is independence; lift $>1$ means the consequent is genuinely
+more likely in the presence of the antecedent.
+
+The \emph{apriori} algorithm makes the search tractable with one observation: a set can
+only be frequent if all of its subsets are. Candidate itemsets are therefore built upward
+from single items, and any set falling below the support floor prunes every superset at a
+stroke.
+
+The ecological reading is immediate if transactions are \emph{sites} and items are
+\emph{species}: a rule says that where this group of species is present, that one usually
+is too. The presence--absence matrix of Chapter~\ref{ch:pam} is already in exactly that
+form.
+
+\begin{lstlisting}
+library(arules)
+pam <- as.matrix(get_data("pam")[, -1]) == 1     # 80 sites x 120 species
+tr  <- as(pam, "transactions")
+rules <- apriori(tr, parameter = list(supp = 0.25, conf = 0.9,
+                                      minlen = 2, maxlen = 3))
+rules <- rules[!is.redundant(rules)]
+inspect(head(sort(rules, by = "lift"), 4))
+\end{lstlisting}
+
+\begin{lstlisting}[style=rout]
+rules at support >= 0.25, confidence >= 0.9: 2427
+after dropping redundant rules: 1916
+
+strongest associations, ranked by LIFT:
+    lhs              rhs    support confidence lift     count
+[1] {sp44, sp109} => {sp16} 0.2500  1.0000000  3.200000 20
+[2] {sp44}        => {sp16} 0.2500  0.9523810  3.047619 20
+[3] {sp10, sp29}  => {sp98} 0.2500  0.9090909  3.030303 20
+[4] {sp55, sp78}  => {sp33} 0.2500  1.0000000  2.857143 20
+\end{lstlisting}
+
+Two steps in that listing deserve comment. Most of the 2427 rules are \emph{redundant} ---
+a longer rule whose shorter version is already at least as confident adds nothing --- and
+dropping them removes a fifth of the output before anyone reads it. And the ranking is by
+lift, not confidence, for a reason that the same data makes plain: sorting instead by
+confidence returns rules with perfect confidence of $1.00$ but lift near $2.05$, because
+their consequents are species that occur almost everywhere. A rule can be always right and
+still tell you nothing.
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.66\linewidth]{16_assoc_rules.png}
+  \caption{The 1916 non-redundant rules, each a point at its support and confidence, shaded
+  from pale to dark by lift. The interesting rules are not the ones highest on the
+  confidence axis but the darkest ones; the support floor of $0.25$ and confidence floor of
+  $0.9$ are visible as the lower edges of the cloud.}
+  \label{fig:assoc}
+\end{figure}
+
+\begin{pitfall}
+Support, confidence and lift are descriptive statistics, not tests. Searching 120 species
+for pairs and triples generates many thousands of candidate rules, so some will reach any
+lift threshold by chance alone. If a specific rule is to be reported as a finding, test it:
+Fisher's exact test on the rule's $2\times2$ table gives $p=1.5\times10^{-14}$ for the
+top rule above, still $2.9\times10^{-11}$ after a Bonferroni correction over all 1916
+rules --- but that correction is the step that is usually skipped.
 \end{pitfall}
 
 % ===========================================================================

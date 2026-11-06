@@ -52,7 +52,7 @@ data(doubs)          # the Verneaux river-fish tables
 ##  a seed. Fix the seed or the answer moves.
 expr <- readRDS("data/leukemiaExpressionSubset.rds")             # genes x samples
 A    <- expr - min(expr)                 # ensure non-negativity
-type <- sub("\\..*$", "", colnames(expr))
+type <- sub("_.*$", "", colnames(expr))          # ALL/AML/CLL/CML/NoL, not the accession
 cat("expression matrix:", nrow(A), "genes x", ncol(A), "samples\n")
 cat("leukemia subtypes:\n"); print(table(type))
 

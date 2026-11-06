@@ -82,6 +82,7 @@ dependencies:
 
   # ---- packages the restored classroom sections use --------------------------
   - r-pvclust                # bootstrap support on dendrograms (session 04)
+  - r-arules                 # association-rule mining (session 16)
   - r-ape                    # fan/cladogram layouts, pcoa (04, 07)
   - r-maps                   # simple basemaps, replaces the retired maptools
   - r-nfactors               # parallel analysis / scree criteria (session 11)
