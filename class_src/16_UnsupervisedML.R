@@ -23,7 +23,6 @@
 #install.packages("uwot")
 library(Rtsne)
 library(uwot)
-library(RColorBrewer)
 
 # Working directory
 #   Point this at the folder that holds this script and its data/ subfolder.
@@ -46,7 +45,7 @@ X     <- t(as.matrix(expr))                      # rows = samples
 ## the UNDERSCORE. Splitting on the period instead leaves the accession in place
 ## and gives every sample a class of its own -- see the purity check below.
 type  <- factor(sub("_.*$", "", rownames(X)))    # ALL / AML / CLL / CML / NoL
-pal   <- brewer.pal(n = 5, name = "Dark2")
+pal   <- c("#1f3b73", "#8c2d3a", "#2a7f7f", "#c8a23a", "#6a4c93")
 cols  <- pal[type]
 cat("samples per subtype:\n"); print(table(type))
 
@@ -168,10 +167,11 @@ if (requireNamespace("arules", quietly = TRUE)) {
   q <- quality(rules)
   par(mfrow = c(1, 1))
   plot(q$support, q$confidence, pch = 19, cex = .5,
-       col = c("blue", "red"),
+       col = hcl.colors(10, "YlOrRd", rev = TRUE)[cut(q$lift, 10, labels = FALSE)],
        xlab = "support", ylab = "confidence")
   legend("bottomright", legend = c("low lift", "high lift"), bty = "n",
-         pch = 19, col = c("blue", "red"))
+         pch = 19, col = hcl.colors(10, "YlOrRd", rev = TRUE)[c(1, 10)])
+
 
   ## ---- is a rule more than co-occurrence by chance? ------------------------
   ##  Nothing above is a significance test. With 120 species there are many

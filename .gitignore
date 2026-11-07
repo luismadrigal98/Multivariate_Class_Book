@@ -36,3 +36,5 @@ scripts/__pycache__/fetch_bibtex.cpython-310.pyc
 .Rhistory
 figs
 data/Flower_data_set.zip
+best_model.h5
+best_model.keras
