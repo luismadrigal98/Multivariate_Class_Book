@@ -89,8 +89,9 @@ if (requireNamespace("keras3", quietly = TRUE)) {
   model |> compile(optimizer = "adam",
                    loss = "categorical_crossentropy", metrics = "accuracy")
   history <- model |> fit(Xs[idx, ], Y[idx, ], epochs = 60, batch_size = 16,
-                          validation_split = 0.2, verbose = 0)
-  plot(history)                                   # training/validation curves
+                          validation_split = 0.2, verbose = 0,
+                          view_metrics = FALSE)
+  print(plot(history))                            # training/validation curves
 
   ## --- small CNN template (image track from UnitNN) -----------------------
   ## cnn <- keras_model_sequential() |>
@@ -323,6 +324,12 @@ model_fitter <- function(model, X, Y_train,
     ## redraws per epoch. RStudio's console handles that badly and the IDE can
     ## stop responding. verbose = 2 prints one tidy line per epoch instead.
     verbose = 2,
+    ## view_metrics = "auto" (the default) opens a live tfruns C3.js chart in
+    ## RStudio's Viewer pane and polls utils::process.events() every epoch.
+    ## When early stopping halts before `epochs` and ReduceLROnPlateau adds a
+    ## tiny learning_rate series, the Viewer's 1 Hz JS redraw loop never
+    ## terminates and exhausts RStudio's 4 GB V8 heap (~55 s after fit() ends).
+    view_metrics = FALSE,
     ...
   )
   
@@ -404,8 +411,11 @@ if (!run_track_c) {
                          # on Track B having happened to run first
   cat("Loading and preprocessing images...\n")
   Data_flowers <- preprocess_images(image_main_dir, 160, 120)
+  labels    <- Data_flowers$categories
+  n_classes <- length(unique(Data_flowers$labels))
   cat("Splitting data into training and testing sets...\n")
   split <- split_data(Data_flowers)
+  rm(Data_flowers); gc() # free the 1.26 GB master array now that split holds train/test
   callbacks_list <- list(
     callback_early_stopping(
       monitor = "val_loss",
@@ -429,14 +439,15 @@ if (!run_track_c) {
     decay_steps = 1000,
     decay_rate = 0.8
   )
-  model_CNN <- create_model_flower_CNN2(length(unique(Data_flowers$labels)))
+  model_CNN <- create_model_flower_CNN2(n_classes)
   fitted_model <- model_fitter(model_CNN, X = split$train$images, 
                                Y_train = split$train$labels, 
                                callbacks_list = callbacks_list, epochs = 30, 
                                batch_size = 32)
+  print(plot(fitted_model))
   X_test <- split$test$images
   Y_test <- split$test$labels
-  labels <- Data_flowers$categories
+  rm(split); gc()        # free the ~1 GB training array before evaluation & plotting
   evaluation <- model_evaluator(model_CNN, x = X_test, y = Y_test, 
                                 labels = labels, predict = T)
   ## ---- how well is it actually doing? ------------------------------------
@@ -468,33 +479,30 @@ if (!run_track_c) {
     dplyr::mutate(Observation_Rank = row_number()) |> # Creates a clean x-axis order
     dplyr::select(-Predicted_Class, -Observation) |> 
     pivot_longer(cols = -Observation_Rank, names_to = "Class", values_to = "Probability")
-  ggplot(df_long, aes(x = Observation_Rank, y = Probability, fill = Class)) +
-    geom_col(width = 1) +
-    scale_fill_viridis_d(option = "turbo") +
-    labs(title = "Class Probabilities per Image", x = "Images (Sorted by Prediction)", 
-         y = "Probability") +
-    theme_bw() +
-    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
-  ggplot(df_long, aes(x = Class, y = Observation_Rank, fill = Probability)) +
-    geom_tile() +
-    scale_fill_viridis_c(option = "magma", limits = c(0, 1)) +
-    labs(title = "Probability Heatmap", x = "Flower Class", y = "Test Set Images") +
-    theme_bw() +
-    theme(axis.text.y = element_blank(), panel.grid = element_blank())
-  prob_df$True_Label <- split$test$labels
+  print(ggplot(df_long, aes(x = Observation_Rank, y = Probability, fill = Class)) +
+          geom_col(width = 1) +
+          scale_fill_viridis_d(option = "turbo") +
+          labs(title = "Class Probabilities per Image", x = "Images (Sorted by Prediction)", 
+               y = "Probability") +
+          theme_bw() +
+          theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()))
+  print(ggplot(df_long, aes(x = Class, y = Observation_Rank, fill = Probability)) +
+          geom_tile() +
+          scale_fill_viridis_c(option = "magma", limits = c(0, 1)) +
+          labs(title = "Probability Heatmap", x = "Flower Class", y = "Test Set Images") +
+          theme_bw() +
+          theme(axis.text.y = element_blank(), panel.grid = element_blank()))
+  prob_df$True_Label <- Y_test
   density_df <- prob_df |> 
     dplyr::select(-Predicted_Class, -Observation) |>
     pivot_longer(cols = -True_Label, names_to = "Class", 
                  values_to = "Probability")
-  ggplot(density_df, aes(x = Probability, fill = Class)) +
-    geom_density(alpha = 0.6, color = NA) +
-    facet_wrap(~ Class, scales = "free_y") +
-    labs(title = "Probability Distributions by Class", x = "Assigned Probability", 
-         y = "Density") +
-    theme_bw()
-  cat("\n[17_NN_DL] done.\n")
+  print(ggplot(density_df, aes(x = Probability, fill = Class)) +
+          geom_density(alpha = 0.6, color = NA) +
+          facet_wrap(~ Class, scales = "free_y") +
+          labs(title = "Probability Distributions by Class", x = "Assigned Probability", 
+               y = "Density") +
+          theme_bw())
 }
 
-cat("
-[17_NN_DL] done.
-")
+cat("\n[17_NN_DL] done.\n")
