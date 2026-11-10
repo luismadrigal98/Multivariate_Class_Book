@@ -17,12 +17,6 @@
 ##     file never fails when keras is absent — it only prints the recipe.
 ## ============================================================================
 
-##  HAND-OWNED -- this file is maintained by hand and scripts/make_class_src.py
-##  will NOT regenerate it. Fixes made in R/ do not reach it automatically; apply
-##  them here too. Remove this line to hand the file back to the generator.
-##
-##  Hand-owned because: Track C, the full flower-CNN training run from the ML
-##  course, exists only in this class edition.
 ##  PLAIN CLASSROOM EDITION
 ##  Generated from R/17_NN_DL.R by scripts/make_class_src.py --
 ##  edit R/17_NN_DL.R and regenerate; changes made here will be overwritten.
@@ -30,10 +24,9 @@
 
 # R packages required
 #install.packages("nnet")
+#BiocManager::install("EBImage")
 library(nnet)
-library(ggplot2)
-library(dplyr)
-library(tidyr)
+library(EBImage)
 
 # Built-in data sets used below
 data(iris)
@@ -87,9 +80,8 @@ if (requireNamespace("keras3", quietly = TRUE)) {
   model |> compile(optimizer = "adam",
                    loss = "categorical_crossentropy", metrics = "accuracy")
   history <- model |> fit(Xs[idx, ], Y[idx, ], epochs = 60, batch_size = 16,
-                          validation_split = 0.2, verbose = 0,
-                          view_metrics = FALSE)
-  print(plot(history))                            # training/validation curves
+                          validation_split = 0.2, verbose = 0)
+  plot(history)                                   # training/validation curves
 
   ## --- small CNN template (image track from UnitNN) -----------------------
   ## cnn <- keras_model_sequential() |>
@@ -108,112 +100,142 @@ if (requireNamespace("keras3", quietly = TRUE)) {
 ##  TRACK C — keras/tensorflow template (UnitNN style). Serious example
 ## ===========================================================================
 
-run_track_c <- T          # set TRUE when you actually want to train
-
 image_main_dir <- "data/Flower_data_set"
 
-## ---- function definitions (nothing runs yet) --------------------------------
-
-index_images <- function(base_path) {
-  #' Scan class subdirectories and index image file paths and integer labels
-  #' without loading pixel data into R memory (~100 KB instead of ~1.26 GB).
-  categories <- sort(list.dirs(base_path, full.names = FALSE, recursive = FALSE))
-  file_paths <- character(0)
-  labels_chr <- character(0)
-
+preprocess_images <- function(base_path, target_width = 320, 
+                              target_height = 240) {
+  # Get all directories (flower categories)
+  categories <- list.dirs(base_path, full.names = FALSE, recursive = FALSE)
+  
+  # Initialize lists to store images and labels
+  images <- list()
+  labels <- vector()
+  file_paths <- vector()
+  
+  # Loop through each category
   for (category in categories) {
-    img_files <- list.files(
-      file.path(base_path, category),
-      pattern    = "\\.(jpg|jpeg|png|gif)$",
-      ignore.case = TRUE,
-      full.names = TRUE,
-      recursive  = FALSE
-    )
-    file_paths <- c(file_paths, img_files)
-    labels_chr <- c(labels_chr, rep(category, length(img_files)))
+    cat("Processing category:", category, "\n")
+    
+    # Get all image files in the category
+    img_files <- list.files(file.path(base_path, category), 
+                            pattern = "\\.jpg|\\.jpeg|\\.png|\\.gif",
+                            full.names = TRUE,
+                            recursive = FALSE)
+    
+    # Process each image
+    for (img_path in img_files) {
+      tryCatch({
+        # Read image
+        img <- readImage(img_path)
+        
+        # Ensure image has 3 channels (RGB)
+        if (length(dim(img)) == 2) {
+          # If grayscale, convert to RGB by replicating the channel
+          img <- array(img, dim = c(dim(img), 3))
+        } else if (dim(img)[3] == 4) {
+          # If RGBA, remove alpha channel
+          img <- img[,,1:3]
+        }
+        
+        # Resize image
+        img <- resize(img, w = target_width, h = target_height)
+        
+        # Normalize pixel values to [0,1]
+        img <- normalize(img)
+        
+        # Store image and label
+        images[[length(images) + 1]] <- img
+        labels <- c(labels, category)
+        file_paths <- c(file_paths, img_path)
+        
+      }, error = function(e) {
+        warning(sprintf("Error processing %s: %s", img_path, e$message))
+      })
+    }
   }
-
-  labels <- as.integer(factor(labels_chr, levels = categories)) - 1L
-
+  
+  # Convert images list to array
+  image_array <- array(unlist(images), 
+                       dim = c(length(images), target_height, target_width, 3))
+  
+  # Convert labels to factor and then to numeric
+  labels <- as.numeric(factor(labels)) - 1
+  
   return(list(
-    file_paths = file_paths,
-    labels     = labels,
-    categories = categories
+    images = image_array,
+    labels = labels,
+    categories = categories,
+    file_paths = file_paths
   ))
 }
 
-make_tf_dataset <- function(paths, labels, target_width = 160L,
-                            target_height = 120L, batch_size = 32L,
-                            shuffle = FALSE, seed = 42L) {
-  #' Build a streaming tf.data.Dataset that reads, decodes, resizes, and
-  #' normalizes one mini-batch of images at a time in C++ background threads.
-  tf <- reticulate::import("tensorflow")
-  target_hw <- c(as.integer(target_height), as.integer(target_width))
 
-  ds <- tf$data$Dataset$from_tensor_slices(
-    reticulate::tuple(as.character(paths), as.integer(labels))
-  )
 
-  if (shuffle) {
-    ds <- ds$shuffle(
-      buffer_size              = as.integer(length(paths)),
-      seed                     = as.integer(seed),
-      reshuffle_each_iteration = TRUE
-    )
-  }
+# Process all images
+cat("Loading and preprocessing images...\n")
+Data_flowers <- preprocess_images(image_main_dir, 160, 120)
 
-  ds <- ds$map(function(path, label) {
-    raw <- tf$io$read_file(path)
-    img <- tf$io$decode_image(raw, channels = 3L, expand_animations = FALSE)
-    img <- tf$image$resize(img, target_hw)
-    img <- img / 255.0
-    reticulate::tuple(img, label)
-  }, num_parallel_calls = tf$data$AUTOTUNE)
-
-  ds$batch(as.integer(batch_size))$prefetch(tf$data$AUTOTUNE)
-}
-
-split_data <- function(data, test_size = 0.2, val_size = 0.2,
-                       target_width = 160L, target_height = 120L,
-                       batch_size = 32L, seed = 42L) {
-  #' Split indexed file paths into train / validation / test sets and return
-  #' streaming tf.data.Dataset pipelines for each split.
+split_data <- function(data, test_size = 0.2, seed = 42) {
   set.seed(seed)
-
+  
+  # Create index for splitting
   total_samples <- length(data$labels)
-  indices       <- sample(total_samples)
-  n_test        <- round(total_samples * test_size)
-  n_train_pool  <- total_samples - n_test
-  n_val         <- round(n_train_pool * val_size)
-
-  train_idx <- indices[1:(n_train_pool - n_val)]
-  val_idx   <- indices[(n_train_pool - n_val + 1):n_train_pool]
-  test_idx  <- indices[(n_train_pool + 1):total_samples]
-
-  list(
-    train = list(
-      dataset = make_tf_dataset(data$file_paths[train_idx], data$labels[train_idx],
-                                target_width, target_height, batch_size,
-                                shuffle = TRUE, seed = seed),
-      labels  = data$labels[train_idx],
-      path    = data$file_paths[train_idx]
-    ),
-    val = list(
-      dataset = make_tf_dataset(data$file_paths[val_idx], data$labels[val_idx],
-                                target_width, target_height, batch_size,
-                                shuffle = FALSE),
-      labels  = data$labels[val_idx],
-      path    = data$file_paths[val_idx]
-    ),
-    test = list(
-      dataset = make_tf_dataset(data$file_paths[test_idx], data$labels[test_idx],
-                                target_width, target_height, batch_size,
-                                shuffle = FALSE),
-      labels  = data$labels[test_idx],
-      path    = data$file_paths[test_idx]
-    )
+  indices <- sample(total_samples)
+  test_samples <- round(total_samples * test_size)
+  
+  # Split data
+  train_indices <- indices[1:(total_samples - test_samples)]
+  test_indices <- indices[(total_samples - test_samples + 1):total_samples]
+  
+  # Create training and testing sets
+  train_data <- list(
+    images = data$images[train_indices,,,],
+    labels = data$labels[train_indices],
+    path = data$file_paths[train_indices]
   )
+  
+  test_data <- list(
+    images = data$images[test_indices,,,],
+    labels = data$labels[test_indices],
+    path = data$file_paths[test_indices]
+  )
+  
+  return(list(
+    train = train_data,
+    test = test_data
+  ))
 }
+
+# Split data
+cat("Splitting data into training and testing sets...\n")
+split <- split_data(Data_flowers)
+
+# Prepare hyperparameters
+
+callbacks_list <- list(
+  callback_early_stopping(
+    monitor = "val_loss",
+    patience = 10,
+    restore_best_weights = TRUE
+  ),
+  callback_reduce_lr_on_plateau(
+    monitor = "val_loss",
+    factor = 0.5,
+    patience = 5,
+    min_lr = 1e-6
+  ),
+  callback_model_checkpoint(
+    filepath = "best_model.keras",
+    monitor = "val_accuracy",
+    save_best_only = TRUE
+  )
+)
+
+lr_schedule <- learning_rate_schedule_exponential_decay(
+  initial_learning_rate = 0.001,
+  decay_steps = 1000,
+  decay_rate = 0.8
+)
 
 create_model_flower_CNN2 <- function(num_classes) {
   model <- keras_model_sequential() |>
@@ -226,7 +248,7 @@ create_model_flower_CNN2 <- function(num_classes) {
     layer_conv_2d(filters = 32, kernel_size = c(3,3), activation = 'relu') |>
     layer_max_pooling_2d(pool_size = c(2,2)) |>
     layer_dropout(0.25) |>
-
+    
     # # Second Convolutional Block
     # layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu') |>
     # layer_batch_normalization() |>
@@ -240,11 +262,6 @@ create_model_flower_CNN2 <- function(num_classes) {
     # layer_conv_2d(filters = 128, kernel_size = c(3,3), activation = 'relu') |>
     # layer_max_pooling_2d(pool_size = c(2,2)) |>
     # layer_dropout(0.25) |>
-
-    # Leaving the two blocks above commented out does NOT make the model
-    # lighter -- it makes it 5.4x HEAVIER (9.28M parameters against 1.73M),
-    # because layer_flatten() then sees a 58x78x32 feature map instead of a
-    # pooled-down one, and the dense layer after it carries that cost.
     
     # Dense layers
     layer_flatten() |>
@@ -262,70 +279,59 @@ create_model_flower_CNN2 <- function(num_classes) {
   return(model)
 }
 
-model_fitter <- function(model, train_data, val_data = NULL,
-                         Y_train = NULL, validation_prop = 0.2,
-                         epochs = 100, batch_size = 32,
-                         callbacks_list = NULL, ...) 
+model_CNN <- create_model_flower_CNN2(length(unique(Data_flowers$labels)))
+
+model_fitter <- function(model, X, Y_train, 
+                         validation_prop = 0.2, epochs = 100, batch_size = 32,
+                         callbacks_list, ...) 
 {
-  #' Fit a keras model on either a streaming tf.data.Dataset or in-memory arrays
+  #' Fit a keras model
   #' 
   #' @param model A keras model
-  #' @param train_data A streaming tf.data.Dataset (or an array of predictors X)
-  #' @param val_data A validation tf.data.Dataset (used when train_data is a Dataset)
-  #' @param Y_train Target vector/matrix (only needed when train_data is an R array)
+  #' @param X A matrix of predictors
+  #' @param Y_train A matrix or list of responses
   #' @param callbacks_list A list of callbacks
-  #' @param validation_prop Proportion of data for validation (array mode only)
+  #' @param validation_prop Proportion of data to use for validation
   #' @param epochs Number of training epochs
-  #' @param batch_size Batch size for training (array mode only; Datasets are pre-batched)
-  #' @param ... Additional arguments passed to keras3::fit()
-  #' @return A fitted keras history object
+  #' @param batch_size Batch size for training
+  #' @param ... Additional arguments passed to keras::fit()
+  #' @return A fitted keras model
   #' ___________________________________________________________________________
   
-  ## verbose = 1 draws a per-BATCH progress bar with carriage returns -- 55
-  ## redraws per epoch. RStudio's console handles that badly and the IDE can
-  ## stop responding. verbose = 2 prints one tidy line per epoch instead.
-  ##
-  ## view_metrics = "auto" (the default) opens a live tfruns C3.js chart in
-  ## RStudio's Viewer pane and polls utils::process.events() every epoch.
-  ## When early stopping halts before `epochs` and ReduceLROnPlateau adds a
-  ## tiny learning_rate series, the Viewer's 1 Hz JS redraw loop never
-  ## terminates and exhausts RStudio's 4 GB V8 heap (~55 s after fit() ends).
-  if (is.null(Y_train)) {
-    history <- model %>% fit(
-      x               = train_data,
-      validation_data = val_data,
-      callbacks       = callbacks_list,
-      epochs          = epochs,
-      verbose         = 2,
-      view_metrics    = FALSE,
-      ...
-    )
-  } else {
-    history <- model %>% fit(
-      x                = train_data,
-      y                = Y_train,
-      validation_split = validation_prop,
-      callbacks        = callbacks_list,
-      epochs           = epochs,
-      batch_size       = batch_size,
-      verbose          = 2,
-      view_metrics     = FALSE,
-      ...
-    )
-  }
+  history <- model %>% fit(
+    x = X,
+    y = Y_train,
+    validation_split = validation_prop,
+    callbacks = callbacks_list,
+    epochs = epochs,
+    batch_size = batch_size,
+    verbose = 1,
+    ...
+  )
   
   return(history)
 }
 
+fitted_model <- model_fitter(model_CNN, X = split$train$images, 
+                             Y_train = split$train$labels, 
+                             callbacks_list = callbacks_list, epochs = 100, 
+                             batch_size = 32)
+
+# Evaluate the model
+
+X_test <- split$test$images
+Y_test <- split$test$labels
+labels <- Data_flowers$categories
+
 model_evaluator <- function(model, x, y, labels = NULL, predict = F, ...)
 {
   #' Wrapper of the evaluate function in keras to assess the performance of the
-  #' models using unseen data (supports both streaming tf.data.Dataset and arrays).
+  #' models using unseen data.
   #' 
   #' @param model A keras model.
-  #' @param x A streaming tf.data.Dataset or an array of predictors (testing slot)
-  #' @param y An integer vector of true target values (testing slot, 0-indexed)
-  #' @param labels A vector with the class names of the target variable
+  #' @param x An array of predictors (testing slot)
+  #' @param y An array of target values (testing slot)
+  #' @param labels A vector with the labels of the target variable
   #' @param predict Whether to do a probabilistic prediction in classification
   #' problems
   #' 
@@ -334,13 +340,8 @@ model_evaluator <- function(model, x, y, labels = NULL, predict = F, ...)
   
   evaluation_results <- list()
   
-  if (inherits(x, "tensorflow.python.data.ops.dataset_ops.DatasetV2")) {
-    evaluation_results[['overall_evaluation']] <- model |>
-      keras3::evaluate(x, verbose = 0, ...)
-  } else {
-    evaluation_results[['overall_evaluation']] <- model |> 
-      keras3::evaluate(x, y, verbose = 0, ...)
-  }
+  evaluation_results[['overall_evaluation']] <- model |> 
+    keras3::evaluate(x, y, ...)
   
   if (predict) 
   {
@@ -350,32 +351,14 @@ model_evaluator <- function(model, x, y, labels = NULL, predict = F, ...)
       stop("Labels must be provied for making a probabilistic prediction")
     }
     
-    # Get probabilistic predictions (streams batch-by-batch if x is a Dataset)
-    prob_predictions <- model |> predict(x, verbose = 0)
+    # Get probabilistic predictions
+    prob_predictions <- model |> predict(x)
     
     # Create a data frame with probabilities and corresponding labels
     prob_df <- as.data.frame(prob_predictions)
     names(prob_df) <- labels
     
     evaluation_results[['probabilistic_prediction']] <- prob_df
-
-    # ---- confusion matrix -------------------------------------------------
-    # The highest-probability class is the prediction. Both vectors are made
-    # factors over the SAME levels so the table stays square even when a class
-    # is never predicted -- otherwise diag() silently misaligns.
-    pred_class <- factor(labels[max.col(prob_predictions, ties.method = "first")],
-                         levels = labels)
-    obs_class  <- factor(labels[y + 1], levels = labels)
-    cm <- table(Observed = obs_class, Predicted = pred_class)
-
-    evaluation_results[['confusion_matrix']] <- cm
-    evaluation_results[['accuracy']]         <- sum(diag(cm)) / sum(cm)
-    evaluation_results[['per_class']] <- data.frame(
-      class     = labels,
-      n         = as.integer(rowSums(cm)),
-      recall    = round(diag(cm) / pmax(1, rowSums(cm)), 3),  # of the true X, how many found
-      precision = round(diag(cm) / pmax(1, colSums(cm)), 3),  # of those called X, how many right
-      row.names = NULL)
   } else 
   {
     evaluation_results[['probabilistic_prediction']] <- NULL
@@ -384,115 +367,10 @@ model_evaluator <- function(model, x, y, labels = NULL, predict = F, ...)
   return(evaluation_results)
 } 
 
-## ---- the expensive part, only on request ------------------------------------
-if (!run_track_c) {
-  message("Track C skipped. Set run_track_c <- TRUE to load the images and ",
-          "train the CNN (~20 min, ~1.2 GB).")
-} else if (!requireNamespace("keras3", quietly = TRUE)) {
-  message("Track C needs keras3 with a working Python TensorFlow behind it.")
-} else if (!dir.exists(image_main_dir)) {
-  message("Track C needs the flower images in ", image_main_dir, ".")
-} else {
-  library(keras3)        # Track C attaches keras3 itself rather than relying
-                         # on Track B having happened to run first
-  cat("Indexing flower images on disk (no pixel arrays loaded into RAM)...\n")
-  Data_flowers <- index_images(image_main_dir)
-  labels       <- Data_flowers$categories
-  n_classes    <- length(labels)
-  cat(sprintf("Found %d images across %d classes (%s).\n",
-              length(Data_flowers$file_paths), n_classes,
-              paste(labels, collapse = ", ")))
+evaluation <- model_evaluator(model_CNN, x = X_test, y = Y_test, 
+                              labels = labels, predict = T)
 
-  cat("Building streaming tf.data pipelines (train / val / test)...\n")
-  split <- split_data(Data_flowers, test_size = 0.2, val_size = 0.2,
-                      target_width = 160L, target_height = 120L,
-                      batch_size = 32L, seed = 42L)
-  callbacks_list <- list(
-    callback_early_stopping(
-      monitor = "val_loss",
-      patience = 10,
-      restore_best_weights = TRUE
-    ),
-    callback_reduce_lr_on_plateau(
-      monitor = "val_loss",
-      factor = 0.5,
-      patience = 5,
-      min_lr = 1e-6
-    ),
-    callback_model_checkpoint(
-      filepath = "best_model.keras",
-      monitor = "val_accuracy",
-      save_best_only = TRUE
-    )
-  )
-  lr_schedule <- learning_rate_schedule_exponential_decay(
-    initial_learning_rate = 0.001,
-    decay_steps = 1000,
-    decay_rate = 0.8
-  )
-  model_CNN <- create_model_flower_CNN2(n_classes)
-  fitted_model <- model_fitter(model_CNN,
-                               train_data     = split$train$dataset,
-                               val_data       = split$val$dataset,
-                               callbacks_list = callbacks_list,
-                               epochs         = 30)
-  print(plot(fitted_model))
-  Y_test <- split$test$labels
-  evaluation <- model_evaluator(model_CNN, x = split$test$dataset, y = Y_test, 
-                                labels = labels, predict = T)
-  ## ---- how well is it actually doing? ------------------------------------
-  cm <- evaluation$confusion_matrix
-  cat("\nConfusion matrix (rows = observed, columns = predicted):\n")
-  print(cm)
-  cat(sprintf("\noverall accuracy: %.3f   (chance with %d equal classes = %.3f)\n",
-              evaluation$accuracy, nrow(cm), 1 / nrow(cm)))
-  cat("\nper class:\n"); print(evaluation$per_class, row.names = FALSE)
-
-  ## Accuracy alone hides WHICH classes are confused for which. The off-diagonal
-  ## cells are the interesting part: a mutually confused pair is a pair these
-  ## features cannot separate.
-  cm_df      <- as.data.frame(cm)
-  cm_df$Prop <- cm_df$Freq / rep(rowSums(cm), times = ncol(cm))
-  print(ggplot(cm_df, aes(x = Predicted, y = Observed, fill = Prop)) +
-          geom_tile(colour = "white", linewidth = 1) +
-          geom_text(aes(label = Freq), colour = "grey15", size = 4) +
-          scale_fill_gradient(low = "#f0f2f5", high = "#1f3b73", limits = c(0, 1),
-                              name = "proportion of\nobserved row") +
-          theme_bw(base_size = 12) + theme(panel.grid = element_blank()) +
-          labs(x = "Predicted class", y = "Observed class"))
-
-  prob_df <- evaluation$probabilistic_prediction
-  prob_df$Predicted_Class <- colnames(prob_df)[max.col(prob_df, ties.method = "first")]
-  prob_df$Observation <- 1:nrow(prob_df)
-  df_long <- prob_df |> 
-    dplyr::arrange(Predicted_Class, Observation) |> 
-    dplyr::mutate(Observation_Rank = row_number()) |> # Creates a clean x-axis order
-    dplyr::select(-Predicted_Class, -Observation) |> 
-    pivot_longer(cols = -Observation_Rank, names_to = "Class", values_to = "Probability")
-  print(ggplot(df_long, aes(x = Observation_Rank, y = Probability, fill = Class)) +
-          geom_col(width = 1) +
-          scale_fill_viridis_d(option = "turbo") +
-          labs(title = "Class Probabilities per Image", x = "Images (Sorted by Prediction)", 
-               y = "Probability") +
-          theme_bw() +
-          theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()))
-  print(ggplot(df_long, aes(x = Class, y = Observation_Rank, fill = Probability)) +
-          geom_tile() +
-          scale_fill_viridis_c(option = "magma", limits = c(0, 1)) +
-          labs(title = "Probability Heatmap", x = "Flower Class", y = "Test Set Images") +
-          theme_bw() +
-          theme(axis.text.y = element_blank(), panel.grid = element_blank()))
-  prob_df$True_Label <- Y_test
-  density_df <- prob_df |> 
-    dplyr::select(-Predicted_Class, -Observation) |>
-    pivot_longer(cols = -True_Label, names_to = "Class", 
-                 values_to = "Probability")
-  print(ggplot(density_df, aes(x = Probability, fill = Class)) +
-          geom_density(alpha = 0.6, color = NA) +
-          facet_wrap(~ Class, scales = "free_y") +
-          labs(title = "Probability Distributions by Class", x = "Assigned Probability", 
-               y = "Density") +
-          theme_bw())
-}
+heatmap(x = as.matrix(evaluation$probabilistic_prediction), 
+        keep.dendro = F, )
 
 cat("\n[17_NN_DL] done.\n")
