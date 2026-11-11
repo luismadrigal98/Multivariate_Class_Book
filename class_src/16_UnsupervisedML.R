@@ -64,12 +64,10 @@ um <- uwot::umap(X, n_neighbors = 15, min_dist = 0.1, n_components = 2)
 op <- par(mfrow = c(1, 3), mar = c(4, 4, 3, 1))
 plot(pc$x[, 1:2], col = cols, pch = 19, main = "PCA",
      xlab = sprintf("PC1 (%.0f%%)", 100 * ve[1]),
-     ylab = sprintf("PC2 (%.0f%%)", 100 * ve[2]), cex = 2)
-plot(ts$Y, col = cols, pch = 19, main = "t-SNE", xlab = "dim 1", ylab = "dim 2",
-     cex = 2)
-plot(um,   col = cols, pch = 19, main = "UMAP",  xlab = "dim 1", ylab = "dim 2",
-     cex = 2)
-legend("topleft", levels(type), col = pal, pch = 19, bty = "n", cex = .9)
+     ylab = sprintf("PC2 (%.0f%%)", 100 * ve[2]))
+plot(ts$Y, col = cols, pch = 19, main = "t-SNE", xlab = "dim 1", ylab = "dim 2")
+plot(um,   col = cols, pch = 19, main = "UMAP",  xlab = "dim 1", ylab = "dim 2")
+legend("topright", levels(type), col = pal, pch = 19, bty = "n", cex = .9)
 par(op)
 
 ## ---- Quantitative check: neighbourhood purity ------------------------------
@@ -98,13 +96,13 @@ cat("  (chance level with", nlevels(type), "equal subtypes =",
 ##  perplexity < (n - 1) / 3, so with 60 samples anything from 20 up is refused.
 ##  Small data sets simply cannot be asked to care about many neighbours.
 cat("\nlargest perplexity allowed for", nrow(X), "samples:",
-    floor((nrow(X) - 1) / 3), "\n")
+    floor((nrow(X) - 1) / 3 - 1e-9), "\n")
 op <- par(mfrow = c(1, 3), mar = c(4, 4, 3, 1))
 for (pp in c(5, 12, 18)) {
   set.seed(1998)
   y <- Rtsne::Rtsne(X, dims = 2, perplexity = pp, pca = TRUE, verbose = FALSE)$Y
   plot(y, col = cols, pch = 19, main = paste("perplexity =", pp),
-       xlab = "dim 1", ylab = "dim 2", cex = 2)
+       xlab = "dim 1", ylab = "dim 2")
 }
 par(op)
 
@@ -117,7 +115,7 @@ par(op)
 ##  no distance, no projection and no embedding.
 ##
 ##  The data is a set of TRANSACTIONS, each a basket of ITEMS. A rule
-##  {A} => {C} is scored by three numbers:
+##  {A, B} => {C} is scored by three numbers:
 ##
 ##    support(X)        = fraction of transactions containing X
 ##    confidence(A=>C)  = support(A and C) / support(A)
