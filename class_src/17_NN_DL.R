@@ -90,7 +90,9 @@ if (requireNamespace("keras3", quietly = TRUE)) {
                           validation_split = 0.2, verbose = 0,
                           view_metrics = FALSE)
   print(plot(history))                            # training/validation curves
-
+  
+  model |> evaluate(Xs[-idx, ], Y[-idx, ])
+  
   ## --- small CNN template (image track from UnitNN) -----------------------
   ## cnn <- keras_model_sequential() |>
   ##   layer_conv_2d(32, c(3,3), activation="relu", input_shape=c(64,64,3)) |>
@@ -235,19 +237,19 @@ create_model_flower_CNN2 <- function(num_classes) {
     layer_max_pooling_2d(pool_size = c(2,2)) |>
     layer_dropout(0.25) |>
 
-    # # Second Convolutional Block
-    # layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu') |>
-    # layer_batch_normalization() |>
-    # layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu') |>
-    # layer_max_pooling_2d(pool_size = c(2,2)) |>
-    # layer_dropout(0.25) |>
-    # 
-    # # Third Convolutional Block
-    # layer_conv_2d(filters = 128, kernel_size = c(3,3), activation = 'relu') |>
-    # layer_batch_normalization() |>
-    # layer_conv_2d(filters = 128, kernel_size = c(3,3), activation = 'relu') |>
-    # layer_max_pooling_2d(pool_size = c(2,2)) |>
-    # layer_dropout(0.25) |>
+    # Second Convolutional Block
+    layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu') |>
+    layer_batch_normalization() |>
+    layer_conv_2d(filters = 64, kernel_size = c(3,3), activation = 'relu') |>
+    layer_max_pooling_2d(pool_size = c(2,2)) |>
+    layer_dropout(0.25) |>
+    
+    # Third Convolutional Block
+    layer_conv_2d(filters = 128, kernel_size = c(3,3), activation = 'relu') |>
+    layer_batch_normalization() |>
+    layer_conv_2d(filters = 128, kernel_size = c(3,3), activation = 'relu') |>
+    layer_max_pooling_2d(pool_size = c(2,2)) |>
+    layer_dropout(0.25) |>
 
     # Leaving the two blocks above commented out does NOT make the model
     # lighter -- it makes it 5.4x HEAVIER (9.28M parameters against 1.73M),
